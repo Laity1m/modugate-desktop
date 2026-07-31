@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+  <title>Sub2API 管理控制台</title>
+  <link rel="stylesheet" href="console-offline.css">
+</head>
+<body>
+  <main>
+    <div class="status-mark"><span></span><span></span><span></span></div>
+    <p class="eyebrow">GATEWAY OFFLINE</p>
+    <h1>管理控制台暂时无法连接</h1>
+    <p class="summary">桌面窗口已经正常打开，但指定地址上没有可访问的 Sub2API 服务。请先回到主窗口的“服务与日志”页面启动服务。</p>
+    <section>
+      <div><span>目标地址</span><code id="root-value">—</code></div>
+      <div><span>诊断信息</span><code id="reason-value">连接失败</code></div>
+    </section>
+    <ol>
+      <li><b>已有服务器</b><span>检查网关地址、端口、防火墙和 HTTPS 配置。</span></li>
+      <li><b>Docker 部署</b><span>在主窗口选择 Docker 模式和 compose 文件，然后点击“保存并启动”。</span></li>
+      <li><b>本地二进制</b><span>选择 Sub2API 可执行文件及其工作目录后启动。</span></li>
+    </ol>
+    <div class="actions"><button id="close-window">关闭窗口</button><button class="primary" id="retry-console">重新连接</button></div>
+  </main>
+  <script src="console-offline.js"></script>
+</body>
+</html>
+

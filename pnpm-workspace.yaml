@@ -1,0 +1,8 @@
+allowBuilds:
+  electron: true
+  electron-winstaller: true
+onlyBuiltDependencies:
+  - electron
+  - electron-winstaller
+overrides:
+  "app-builder-lib>@electron/get": 5.1.0

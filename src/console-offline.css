@@ -1,0 +1,23 @@
+:root { color-scheme: dark; font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { display: grid; place-items: center; min-height: 100vh; margin: 0; color: #edf7ff; background: radial-gradient(circle at 50% 25%, rgba(68,215,200,.08), transparent 32%), #07101c; }
+main { width: min(680px, calc(100vw - 48px)); padding: 38px; border: 1px solid rgba(151,180,211,.16); border-radius: 16px; background: linear-gradient(145deg, rgba(17,31,49,.96), rgba(10,22,37,.97)); box-shadow: 0 28px 80px rgba(0,0,0,.35); }
+.status-mark { position: relative; width: 58px; height: 58px; margin-bottom: 24px; border: 1px solid rgba(255,113,134,.38); border-radius: 15px; background: rgba(255,113,134,.07); }
+.status-mark::before, .status-mark::after { content: ""; position: absolute; top: 27px; left: 15px; width: 28px; height: 2px; background: #ff7186; transform: rotate(45deg); }
+.status-mark::after { transform: rotate(-45deg); }
+.eyebrow { margin: 0; color: #ff7186; font: 700 10px Consolas, monospace; letter-spacing: .16em; }
+h1 { margin: 9px 0 12px; font-size: 27px; letter-spacing: -.03em; }
+.summary { margin: 0; color: #8fa4ba; line-height: 1.75; }
+section { display: grid; gap: 1px; margin: 25px 0; overflow: hidden; border: 1px solid rgba(151,180,211,.14); border-radius: 10px; background: rgba(151,180,211,.14); }
+section div { display: grid; grid-template-columns: 100px 1fr; gap: 14px; padding: 13px 15px; background: #0c1929; }
+section span { color: #61788f; font-size: 12px; }
+code { overflow: hidden; color: #b9c9d8; font: 11px Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+ol { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+li { position: relative; display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding-left: 26px; color: #8fa4ba; font-size: 12px; line-height: 1.55; }
+li::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 1px; color: #44d7c8; font: 700 10px Consolas, monospace; }
+li b { color: #e5eff8; }
+.actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 29px; padding-top: 20px; border-top: 1px solid rgba(151,180,211,.14); }
+button { padding: 10px 16px; border: 1px solid rgba(151,180,211,.22); border-radius: 8px; background: rgba(255,255,255,.035); color: #b9c9d8; font: 600 12px inherit; cursor: pointer; }
+button:hover { border-color: rgba(68,215,200,.4); }
+button.primary { border-color: #44d7c8; background: #44d7c8; color: #05231f; }
+

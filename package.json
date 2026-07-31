@@ -1,0 +1,58 @@
+{
+  "name": "modugate-desktop",
+  "version": "0.3.0",
+  "description": "Windows desktop console for local AI gateways, OAuth account connections, and API compatibility testing",
+  "main": "main.js",
+  "author": "Laity1m and ModuGate contributors",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "test": "node --test tests/*.test.js",
+    "build:dir": "electron-builder --win --dir",
+    "build:win": "electron-builder --win nsis",
+    "build:portable": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^37.2.3",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.modugate.desktop",
+    "productName": "ModuGate",
+    "electronDist": "node_modules/electron/dist",
+    "directories": {
+      "output": "release-all-in-one"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "core/**/*",
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "runtime",
+        "to": "runtime",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "ModuGate-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "include": "build/installer.nsh",
+      "oneClick": false,
+      "perMachine": true,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}
