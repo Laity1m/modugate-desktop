@@ -1,4 +1,4 @@
-# ModuGate
+# ModuGate（模渡）
 
 > 一个面向 Windows 的本地 AI API 网关与兼容性测试工具。
 
