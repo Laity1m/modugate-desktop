@@ -127,6 +127,13 @@ class ProcessManager {
   async startService(service) {
     if (service.mode === 'cliproxy') {
       if (!this.cliProxyRuntime) throw new Error('CLIProxyAPI 轻量运行组件尚未初始化');
+      this.cliProxyRuntime.setLanAccess(Boolean(service.allowLan));
+      if (await this.cliProxyRuntime.isHealthy()
+        && this.cliProxyRuntime.activeAllowLan !== null
+        && this.cliProxyRuntime.activeAllowLan !== this.cliProxyRuntime.allowLan) {
+        this.log('局域网访问设置已改变，正在安全重启轻量引擎…');
+        await this.cliProxyRuntime.stop();
+      }
       return this.cliProxyRuntime.start();
     }
 
@@ -268,13 +275,19 @@ class ProcessManager {
   }
 
   async getServiceStatus(service) {
-    if (service.mode === 'cliproxy' && this.cliProxyRuntime) return this.cliProxyRuntime.getStatus();
+    if (service.mode === 'cliproxy' && this.cliProxyRuntime) {
+      this.cliProxyRuntime.setLanAccess(Boolean(service.allowLan));
+      return this.cliProxyRuntime.getStatus();
+    }
     if (service.mode === 'integrated' && this.integratedRuntime) return this.integratedRuntime.getStatus();
     return { mode: service.mode, state: 'unknown', healthy: false, lastError: '' };
   }
 
   getServiceCredentials(service) {
-    if (service.mode === 'cliproxy' && this.cliProxyRuntime) return this.cliProxyRuntime.getCredentials();
+    if (service.mode === 'cliproxy' && this.cliProxyRuntime) {
+      this.cliProxyRuntime.setLanAccess(Boolean(service.allowLan));
+      return this.cliProxyRuntime.getCredentials();
+    }
     if (service.mode === 'integrated' && this.integratedRuntime) return this.integratedRuntime.getCredentials();
     return null;
   }

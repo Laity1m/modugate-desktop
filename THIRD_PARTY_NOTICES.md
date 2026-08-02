@@ -43,4 +43,10 @@ The installer includes the upstream license and README next to the Sub2API binar
 - Publisher: Microsoft Corporation
 - SHA-256: `CC0FF0EB1DC3F5188AE6300FAEF32BF5BEEBA4BDD6E8E445A9184072096B713B`
 
+## node-qrcode 1.5.4
+
+- Project: https://github.com/soldair/node-qrcode
+- License: MIT
+- Purpose: generates local-network Base URL QR codes entirely on the user's computer
+
 All trademarks belong to their respective owners. These components are provided without warranty under their respective licenses.

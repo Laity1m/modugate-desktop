@@ -1,6 +1,6 @@
 {
   "name": "modugate-desktop",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Windows desktop console for local AI gateways, OAuth account connections, and API compatibility testing",
   "main": "main.js",
   "author": "Laity1m and ModuGate contributors",
@@ -8,14 +8,16 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "test": "node --test tests/*.test.js",
+    "test": "node --test tests",
+    "test:lan": "node scripts/lan-smoke.js",
+    "test:ui": ".\\node_modules\\electron\\dist\\electron.exe scripts\\ui-smoke.js",
     "build:dir": "electron-builder --win --dir",
     "build:win": "electron-builder --win nsis",
     "build:portable": "electron-builder --win portable"
   },
   "devDependencies": {
     "electron": "^37.2.3",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "26.0.12"
   },
   "build": {
     "appId": "com.modugate.desktop",
@@ -54,5 +56,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
     }
+  },
+  "dependencies": {
+    "qrcode": "1.5.4"
   }
 }

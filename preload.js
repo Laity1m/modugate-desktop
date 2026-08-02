@@ -17,6 +17,14 @@ contextBridge.exposeInMainWorld('studio', {
     cancel: (requestId) => ipcRenderer.invoke('gateway:cancel', requestId),
     onChunk: (callback) => subscribe('gateway:chunk', callback)
   },
+  images: {
+    generate: (payload) => ipcRenderer.invoke('image:generate', payload),
+    cancel: (requestId) => ipcRenderer.invoke('image:cancel', requestId),
+    history: () => ipcRenderer.invoke('image:history'),
+    load: (id) => ipcRenderer.invoke('image:load', id),
+    save: (id) => ipcRenderer.invoke('image:save', id),
+    clearHistory: () => ipcRenderer.invoke('image:history:clear')
+  },
   service: {
     start: () => ipcRenderer.invoke('service:start'),
     stop: () => ipcRenderer.invoke('service:stop'),
@@ -44,5 +52,11 @@ contextBridge.exposeInMainWorld('studio', {
   },
   external: {
     open: (url) => ipcRenderer.invoke('external:open', url)
+  },
+  clipboard: {
+    writeText: (value) => ipcRenderer.invoke('clipboard:write-text', value)
+  },
+  network: {
+    qrCode: (value) => ipcRenderer.invoke('network:qr-code', value)
   }
 });

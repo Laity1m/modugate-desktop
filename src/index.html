@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; connect-src 'none'">
   <title>ModuGate</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=0.3.1-lan1">
 </head>
 <body>
   <div class="app-shell">
@@ -16,12 +16,13 @@
       </div>
 
       <nav class="nav-list" aria-label="主导航">
-        <button class="nav-item active" data-page-target="dashboard"><span class="nav-icon">◫</span><span>概览</span></button>
-        <button class="nav-item" data-page-target="connection"><span class="nav-icon">⌁</span><span>网关连接</span></button>
-        <button class="nav-item" data-page-target="playground"><span class="nav-icon">▷</span><span>协议测试</span></button>
-        <button class="nav-item" data-page-target="clients"><span class="nav-icon">⌘</span><span>客户端实验室</span></button>
-        <button class="nav-item" data-page-target="service"><span class="nav-icon">≋</span><span>服务与日志</span></button>
-        <button class="nav-item" data-page-target="security"><span class="nav-icon">◇</span><span>安全说明</span></button>
+        <button class="nav-item active" data-page-target="dashboard" aria-label="概览" title="概览"><span class="nav-icon">◫</span><span>概览</span></button>
+        <button class="nav-item" data-page-target="connection" aria-label="网关连接" title="网关连接"><span class="nav-icon">⌁</span><span>网关连接</span></button>
+        <button class="nav-item" data-page-target="playground" aria-label="协议测试" title="协议测试"><span class="nav-icon">▷</span><span>协议测试</span></button>
+        <button class="nav-item" data-page-target="images" aria-label="图片工坊" title="图片工坊"><span class="nav-icon">◩</span><span>图片工坊</span></button>
+        <button class="nav-item" data-page-target="clients" aria-label="客户端实验室" title="客户端实验室"><span class="nav-icon">⌘</span><span>客户端实验室</span></button>
+        <button class="nav-item" data-page-target="service" aria-label="服务与日志" title="服务与日志"><span class="nav-icon">≋</span><span>服务与日志</span></button>
+        <button class="nav-item" data-page-target="security" aria-label="安全说明" title="安全说明"><span class="nav-icon">◇</span><span>安全说明</span></button>
       </nav>
 
       <div class="sidebar-bottom">
@@ -29,7 +30,8 @@
           <span class="status-dot unknown" id="side-status-dot"></span>
           <div><small>网关状态</small><strong id="side-status-text">尚未检测</strong></div>
         </div>
-        <div class="version">DUAL ENGINE · v0.3.0</div>
+        <div class="background-hint">关闭窗口后继续在系统托盘运行</div>
+        <div class="version">DUAL ENGINE · v0.3.1</div>
       </div>
     </aside>
 
@@ -93,6 +95,7 @@
                 <div><span class="client-logo hermes">H</span><p><strong>Hermes Agent</strong><small>OpenAI Chat Completions</small></p><code>/v1/chat/completions</code></div>
                 <div><span class="client-logo codex">C</span><p><strong>Codex</strong><small>OpenAI Responses</small></p><code>/v1/responses</code></div>
                 <div><span class="client-logo claude">A</span><p><strong>Claude Code</strong><small>Anthropic Messages</small></p><code>/v1/messages</code></div>
+                <div><span class="client-logo image">I</span><p><strong>Image API</strong><small>图片生成与编辑</small></p><code>/v1/images/*</code></div>
               </div>
             </article>
           </div>
@@ -145,6 +148,53 @@
           </div>
         </section>
 
+        <section class="page" data-page="images">
+          <div class="image-studio-layout">
+            <article class="panel image-composer-panel">
+              <div class="image-mode-tabs" role="tablist" aria-label="图片操作模式">
+                <button class="image-mode-tab active" data-image-mode="generate" role="tab" aria-selected="true"><strong>生成图片</strong><small>TEXT TO IMAGE</small></button>
+                <button class="image-mode-tab" data-image-mode="edit" role="tab" aria-selected="false"><strong>编辑图片</strong><small>IMAGE TO IMAGE</small></button>
+              </div>
+              <div class="image-composer-body">
+                <div class="request-meta"><span>POST</span><code id="image-endpoint">/v1/images/generations</code><b id="image-api-state">READY</b></div>
+                <div class="image-form-grid">
+                  <label class="field field-wide"><span>图片模型</span><input id="image-model" list="image-models-list" value="gpt-image-2" placeholder="gpt-image-2"><datalist id="image-models-list"><option value="gpt-image-2"></option><option value="gpt-image-1"></option><option value="gpt-image-1-mini"></option></datalist></label>
+                  <label class="field"><span>尺寸</span><select id="image-size"><option value="auto">自动</option><option value="1024x1024" selected>1024 × 1024</option><option value="1536x1024">1536 × 1024 横向</option><option value="1024x1536">1024 × 1536 纵向</option><option value="2048x2048">2048 × 2048</option><option value="2048x1152">2048 × 1152 横向</option><option value="3840x2160">3840 × 2160 4K</option><option value="2160x3840">2160 × 3840 4K</option></select></label>
+                  <label class="field"><span>质量</span><select id="image-quality"><option value="auto">自动</option><option value="low">低 · 草图</option><option value="medium">中 · 平衡</option><option value="high">高 · 成品</option></select></label>
+                  <label class="field"><span>数量</span><select id="image-count"><option value="1">1 张</option><option value="2">2 张</option><option value="3">3 张</option><option value="4">4 张</option></select></label>
+                  <label class="field"><span>格式</span><select id="image-format"><option value="png">PNG</option><option value="jpeg">JPEG</option><option value="webp">WebP</option></select></label>
+                  <label class="field field-wide"><span>背景</span><select id="image-background"><option value="auto">自动</option><option value="opaque">不透明</option><option value="transparent">透明（部分模型支持）</option></select></label>
+                </div>
+                <label class="field image-prompt-field"><span>提示词</span><textarea id="image-prompt" maxlength="32000" placeholder="描述主体、场景、构图、光线、风格和画面文字……">一座未来主义的青绿色数字网关，悬浮在深蓝色空间中，电影级光影，精细、简洁、无文字。</textarea><small><span id="image-prompt-count">0</span> / 32000</small></label>
+                <div class="reference-block hidden" id="reference-block">
+                  <div class="reference-heading"><div><strong>参考图片</strong><small>最多 4 张，支持 PNG、JPEG、WebP，单张不超过 25 MB</small></div><button class="button button-secondary" id="pick-reference-images">选择图片</button></div>
+                  <div class="reference-list" id="reference-list"><p>尚未选择参考图片</p></div>
+                </div>
+                <p class="image-error hidden" id="image-error" role="alert"></p>
+                <div class="form-actions split image-actions"><button class="button button-ghost" id="copy-image-api">复制 API 示例</button><div><button class="button button-ghost hidden" id="cancel-image">取消</button><button class="button button-primary" id="run-image">开始生成</button></div></div>
+              </div>
+            </article>
+
+            <article class="panel image-results-panel">
+              <div class="response-head"><div><span class="terminal-dot red"></span><span class="terminal-dot amber"></span><span class="terminal-dot green"></span><strong>图片结果</strong></div><div class="response-stats"><span id="image-result-status">READY</span><span id="image-result-latency">— ms</span></div></div>
+              <div class="image-results empty" id="image-results">
+                <div class="image-empty-state"><span>◩</span><strong>等待图片请求</strong><p>生成结果会自动保存到本机历史记录。复杂请求可能需要约 2 分钟。</p></div>
+              </div>
+              <div class="image-result-footer"><span id="image-result-count">尚无结果</span><span>本机保存 · 不经过网页跨域代理</span></div>
+            </article>
+          </div>
+
+          <article class="panel api-example-panel">
+            <div class="panel-title-row"><div><p class="section-kicker">API EXAMPLE</p><h3>OpenAI 兼容调用</h3><p>示例使用环境变量保存密钥，不会把真实 API Key 写入代码。</p></div><button class="button button-secondary" id="copy-image-api-secondary">复制代码</button></div>
+            <pre id="image-api-example"></pre>
+          </article>
+
+          <article class="panel image-history-panel">
+            <div class="panel-title-row"><div><p class="section-kicker">LOCAL HISTORY</p><h3>最近生成</h3><p>最多保留 24 张，原图仅保存在当前 Windows 用户的应用数据目录。</p></div><button class="button button-ghost" id="clear-image-history">清空历史</button></div>
+            <div class="image-history-grid" id="image-history"><p class="image-history-empty">还没有图片历史记录。</p></div>
+          </article>
+        </section>
+
         <section class="page" data-page="clients">
           <div class="client-intro panel">
             <div><p class="section-kicker">REAL CLIENTS</p><h3>客户端实验室</h3><p>内置协议测试不依赖外部软件；这里还可以调用本机真实 CLI，验证工具级兼容性。</p></div><button class="button button-secondary" id="detect-tools">重新检测</button>
@@ -182,8 +232,23 @@
                   <div><span>本地 API 地址</span><strong id="cliproxy-url">http://127.0.0.1:8317</strong></div>
                   <span class="status-badge neutral" id="cliproxy-state">正在检查</span>
                 </div>
-                <label class="field"><span>本机 API Key</span><div class="input-wrap"><input id="cliproxy-api-key" type="password" value="正在读取…" readonly><button type="button" class="input-action" id="toggle-cliproxy-key">显示</button></div><small>由软件随机生成，仅监听 127.0.0.1，并使用 Windows 安全存储保护。</small></label>
+                <label class="field"><span>本机 API Key</span><div class="input-wrap"><input id="cliproxy-api-key" type="password" value="正在读取…" readonly><button type="button" class="input-action" id="toggle-cliproxy-key">显示</button></div><small>由软件随机生成并使用 Windows 安全存储保护。只有主动开启局域网访问时，API 才会供同一网络内的设备连接。</small></label>
                 <label class="field"><span>管理控制台密钥</span><div class="input-wrap"><input id="cliproxy-management-key" type="password" value="正在读取…" readonly><button type="button" class="input-action" id="toggle-management-key">显示</button></div><small>打开管理控制台时输入此密钥。它与给 AI 工具使用的 API Key 不同。</small></label>
+                <section class="lan-access-card" id="lan-access-card">
+                  <div class="lan-access-head">
+                    <div><strong>手机 / 局域网访问</strong><small>只开放模型 API；管理控制台继续限制在本机。</small></div>
+                    <label class="switch-control"><input id="lan-access-enabled" type="checkbox"><span aria-hidden="true"></span><b>允许同一局域网访问</b></label>
+                  </div>
+                  <div class="lan-access-detail hidden" id="lan-access-detail">
+                    <div class="lan-qr"><img id="lan-api-qr" alt="手机访问 Base URL 二维码"><small>二维码仅包含 Base URL，不包含密钥</small></div>
+                    <div class="lan-access-info">
+                      <span class="status-badge neutral" id="lan-access-state">保存并启动后生效</span>
+                      <div><small>手机 Base URL</small><strong id="lan-api-url">正在检测局域网地址…</strong></div>
+                      <div class="lan-copy-actions"><button type="button" class="button button-secondary" id="copy-lan-url">复制 Base URL</button><button type="button" class="button button-secondary" id="copy-lan-key">复制 API Key</button></div>
+                      <p>手机与电脑需连接同一 Wi-Fi。若连接超时，请在 Windows 防火墙中允许 ModuGate / cli-proxy-api.exe 的“专用网络”入站访问。</p>
+                    </div>
+                  </div>
+                </section>
                 <div class="oauth-block">
                   <div><strong>登录模型账号</strong><small>点击后会打开服务商的官方授权网页。软件不会读取你的账号密码。</small></div>
                   <div class="oauth-grid">
@@ -227,6 +292,6 @@
     </main>
   </div>
   <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
-  <script src="renderer.js"></script>
+  <script src="renderer.js?v=0.3.1-lan1"></script>
 </body>
 </html>

@@ -10,7 +10,14 @@ test('mergeSettings preserves defaults for partial input', () => {
   const value = mergeSettings({ connection: { baseUrl: 'https://example.com' } });
   assert.equal(value.connection.baseUrl, 'https://example.com');
   assert.equal(value.service.mode, 'cliproxy');
+  assert.equal(value.service.allowLan, false);
   assert.equal(value.tools.codexPath, 'codex');
+  assert.equal(value.images.model, 'gpt-image-2');
+});
+
+test('mergeSettings preserves the LAN sharing choice', () => {
+  const value = mergeSettings({ service: { allowLan: true } });
+  assert.equal(value.service.allowLan, true);
 });
 
 test('SettingsStore encrypts and decrypts the API key', (t) => {

@@ -1,38 +1,93 @@
+const fs = require('node:fs');
 const path = require('node:path');
 const {
   app,
   BrowserWindow,
+  clipboard,
   dialog,
   ipcMain,
+  Menu,
+  nativeImage,
   safeStorage,
   shell,
-  session
+  session,
+  Tray
 } = require('electron');
 const { SettingsStore } = require('./core/settings-store');
 const { testGateway, buildRequest, streamRequest, normalizeGatewayUrl } = require('./core/api-client');
 const { ProcessManager } = require('./core/process-manager');
 const { IntegratedRuntime } = require('./core/integrated-runtime');
 const { CliProxyRuntime } = require('./core/cliproxy-runtime');
+const { generateImages } = require('./core/image-api');
+const { ImageHistoryStore, MIME_EXTENSION } = require('./core/image-history');
+const { isPrivateIPv4 } = require('./core/network-access');
+const QRCode = require('qrcode');
 
 let mainWindow;
+let tray;
 let settingsStore;
 let processManager;
 let integratedRuntime;
 let cliProxyRuntime;
+let imageHistoryStore;
 let allowQuit = false;
 let shuttingDown = false;
+let backgroundNoticeShown = false;
 const apiControllers = new Map();
+const imageControllers = new Map();
+const TRAY_ICON_PNG = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAARiSURBVFhH1VdZSFRRGJ63GW2bCFHnQpO26NwJbdFQU0mdyiwxKc2ybLOyKVPbhR4MLYOWh/aNCqmMHrQipiLENrIsCfHBbH0ookIIKkgiOPEd+28z59y5jS0P/fAxw5lz/+/f/zsm0/8oZR9eWicfP+JOP7ivnBBTUlEg3vurMqPhTPLsZk/Tkq62z2s+vWZ6WPayg02rr3s7fsOmo+bQqGGijt+S/BvX4wtbb3WKRHlNHh8sftzmY0zBnessZmXpxWC7GibqDFjmtjSdIoWrul8w17HDLDK3gFkUVRdhKVPZxNpabiA95zp25Js1JnGBqNtQkOOFHffbfio5zAbHTpQI/WFgdDw3BEZTNMLTMneJPH6FyEvedLGohcUSQaBQXNlaaoraW1j/qLh9IpckFHaQQwEpC83K5QiOiJWIjIBokBE5jeeZ2eYoETk1meVpzKCwk+dDUjNZ0rULzNV5jyPtYTOz5c+XiIyA2oBDXG9R8ddgmzpG5OYyt6X5GS6lH9jLH4S3Kc2XNXJCevttZh2fKhEZYdy6jVoH9Rs57pLIrXmPwqGCg6ciOSGytFwi+RUKW29yI2CMFIW8Js89b+8B+5JlEjEhp+0mi1ldzvpFjpGI/MG53M0NwNywKOohHwOWvmjvwY9Ds2ZpDwwYncjDLZIDS7ufc2XIbeqe3SxkQroPmV7RwlhqTevY5HcaOaYdDlGtotURK9wSuXPHdu49+puKFsi9coE5y9YaFi3u4C6ioaUBi8UrNBJCXNlsVGUlR3hOvs9vaNXMupPcs9KPr1jWk4eSwd5Fi2iBK65yC7PYonsX2PT603txCEUieaBAvyce3C+RE6hoQUy1FqREl3MDMutOnP1TA4Dh7tUSMWHEuvX8DrUjxrtZcVRxA1J37qzFISaVqDRQoAgLHtxikx/fl8gBFCTuYUeAC58WRd3MDUiqqSnGIYpKVBwIvGf+zAc3JHJ1W7V2d/q50/weithsUxdxA4bNm2en9ujL1gOwnmnMIoJoNaOipVUNo4OU6IQfjWgyZTec5286yJFIIoJ6fLS7VOtr5FS8JwLG4i5vd5v6xWS3WzQDEqurPfgR49LfdBMX09SuVrbo/VOWULVVuqsHRAgcaEWLojZq5JDQlCkTKI+8R4WH/S2mjI67AS0mhBy6adcEhTtm+hgAia1Yz/cBciqO1j9ZTIgoLaLeXeN4JHJzwWjENNRLhdFioh73Bwo9IoyBpes9SUh8WhWlAm1JXWG0mKjHRcABajuEHi8m0hbUk8jZhVepXfA5ck4RV6i3mLx73BvIOYUd5NBhtqktPpXvV+x2S0hCRqP3tkNqoMSox4mYvKaw4wzkg+yxVpHKUAaocTVoMRo0VKDYGRilmGZYq/iO4vL+cwKvcYac87AH5LmOmBXnJKsz4TYMwas1EfgDUoah1NtFjk7DguuLQJFZUevDkqf1wBh4jUgg3PgOaG9TNscVbc7/C0FUsMmwTn3hnNTXUH8Hy2LmgP8qK8YAAAAASUVORK5CYII=';
 
 function sendToMain(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
+}
+
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createWindow();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function notifyRunningInBackground() {
+  if (backgroundNoticeShown || !tray || process.platform !== 'win32') return;
+  backgroundNoticeShown = true;
+  tray.displayBalloon({
+    iconType: 'info',
+    title: 'ModuGate 正在后台运行',
+    content: '本地 API 服务保持运行。点击系统托盘图标可重新打开窗口。',
+    noSound: true
+  });
+}
+
+function hideMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.hide();
+  notifyRunningInBackground();
+}
+
+function createTray() {
+  if (tray) return;
+  const icon = nativeImage.createFromBuffer(Buffer.from(TRAY_ICON_PNG, 'base64')).resize({ width: 16, height: 16 });
+  tray = new Tray(icon);
+  tray.setToolTip('ModuGate · 本地 AI 网关');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: '显示 ModuGate', click: showMainWindow },
+    { type: 'separator' },
+    { label: '退出 ModuGate', click: () => app.quit() }
+  ]));
+  tray.on('click', showMainWindow);
+  tray.on('double-click', showMainWindow);
 }
 
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1380,
     height: 880,
-    minWidth: 1080,
-    minHeight: 680,
+    minWidth: 760,
+    minHeight: 520,
     backgroundColor: '#08111f',
     title: 'ModuGate',
     show: false,
@@ -46,10 +101,41 @@ function createWindow() {
   });
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
   mainWindow.once('ready-to-show', () => mainWindow.show());
+  mainWindow.on('minimize', (event) => {
+    if (allowQuit || shuttingDown) return;
+    event.preventDefault();
+    hideMainWindow();
+  });
+  mainWindow.on('close', (event) => {
+    if (allowQuit || shuttingDown) return;
+    event.preventDefault();
+    hideMainWindow();
+  });
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
+}
+
+function createImageThumbnail(buffer) {
+  try {
+    const source = nativeImage.createFromBuffer(buffer);
+    if (source.isEmpty()) return buffer;
+    const size = source.getSize();
+    const thumbnail = size.width > 360
+      ? source.resize({ width: 360, quality: 'good' })
+      : source;
+    return thumbnail.toPNG();
+  } catch {
+    return buffer;
+  }
+}
+
+function imageDataUrl(buffer, mimeType) {
+  return `data:${mimeType};base64,${buffer.toString('base64')}`;
 }
 
 function registerIpc() {
@@ -79,6 +165,94 @@ function registerIpc() {
     controller.abort();
     apiControllers.delete(requestId);
     return true;
+  });
+
+  ipcMain.handle('image:generate', async (_event, payload) => {
+    const requestId = String(payload?.requestId || '');
+    if (!requestId) throw new Error('图片请求缺少 requestId');
+    const controller = new AbortController();
+    imageControllers.set(requestId, controller);
+    try {
+      const settings = settingsStore.load();
+      const result = await generateImages(settings.connection, payload, {
+        signal: controller.signal,
+        timeoutMs: 300_000
+      });
+      const createdAt = new Date(result.created * 1000).toISOString();
+      const images = result.images.map((image) => {
+        const item = imageHistoryStore.add(image.buffer, {
+          mimeType: image.mimeType,
+          prompt: result.options.prompt,
+          revisedPrompt: image.revisedPrompt,
+          model: result.options.model,
+          mode: result.options.mode,
+          size: result.options.size,
+          quality: result.options.quality,
+          createdAt
+        }, createImageThumbnail(image.buffer));
+        return {
+          ...item,
+          dataUrl: imageDataUrl(image.buffer, image.mimeType)
+        };
+      });
+      return {
+        status: result.status,
+        latencyMs: result.latencyMs,
+        requestId: result.requestId,
+        usage: result.usage,
+        images
+      };
+    } finally {
+      imageControllers.delete(requestId);
+    }
+  });
+  ipcMain.handle('image:cancel', (_event, requestId) => {
+    const controller = imageControllers.get(String(requestId || ''));
+    if (!controller) return false;
+    controller.abort();
+    imageControllers.delete(String(requestId));
+    return true;
+  });
+  ipcMain.handle('image:history', () => imageHistoryStore.list());
+  ipcMain.handle('image:load', (_event, id) => {
+    const item = imageHistoryStore.load(String(id || ''));
+    return { ...item, buffer: undefined, dataUrl: imageDataUrl(item.buffer, item.mimeType) };
+  });
+  ipcMain.handle('image:save', async (_event, id) => {
+    const item = imageHistoryStore.load(String(id || ''));
+    const extension = MIME_EXTENSION[item.mimeType] || 'png';
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: '保存生成图片',
+      defaultPath: `ModuGate-${new Date().toISOString().replace(/[:.]/g, '-')}.${extension}`,
+      filters: [{ name: `${extension.toUpperCase()} 图片`, extensions: [extension] }]
+    });
+    if (result.canceled || !result.filePath) return { saved: false };
+    fs.writeFileSync(result.filePath, item.buffer);
+    return { saved: true, filePath: result.filePath };
+  });
+  ipcMain.handle('image:history:clear', () => imageHistoryStore.clear());
+  ipcMain.handle('clipboard:write-text', (_event, value) => {
+    clipboard.writeText(String(value || ''));
+    return true;
+  });
+  ipcMain.handle('network:qr-code', async (_event, value) => {
+    const text = String(value || '').trim();
+    if (!text || text.length > 512) throw new Error('二维码地址无效');
+    let target;
+    try {
+      target = new URL(text);
+    } catch {
+      throw new Error('二维码地址无效');
+    }
+    if (target.protocol !== 'http:' || !isPrivateIPv4(target.hostname)) {
+      throw new Error('只能为局域网 HTTP 地址生成二维码');
+    }
+    return QRCode.toDataURL(text, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 220,
+      color: { dark: '#07111eff', light: '#ffffffff' }
+    });
   });
 
   ipcMain.handle('service:start', async () => processManager.startService(settingsStore.load().service));
@@ -115,14 +289,21 @@ function registerIpc() {
   ipcMain.handle('tools:cancel', (_event, requestId) => processManager.cancelTool(requestId));
 
   ipcMain.handle('dialog:pick', async (_event, type) => {
-    const properties = type === 'directory' ? ['openDirectory'] : ['openFile'];
+    const properties = type === 'directory'
+      ? ['openDirectory']
+      : type === 'images'
+        ? ['openFile', 'multiSelections']
+        : ['openFile'];
     const filters = type === 'compose'
       ? [{ name: 'Docker Compose', extensions: ['yml', 'yaml'] }]
       : type === 'binary'
         ? [{ name: 'Executable', extensions: process.platform === 'win32' ? ['exe', 'cmd', 'bat'] : ['*'] }]
-        : undefined;
+        : type === 'images'
+          ? [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+          : undefined;
     const result = await dialog.showOpenDialog(mainWindow, { properties, filters });
-    return result.canceled ? null : result.filePaths[0];
+    if (result.canceled) return null;
+    return type === 'images' ? result.filePaths.slice(0, 4) : result.filePaths[0];
   });
 
   ipcMain.handle('console:open', async () => {
@@ -170,7 +351,16 @@ function registerIpc() {
   });
 }
 
+if (!app.requestSingleInstanceLock()) {
+  allowQuit = true;
+  app.quit();
+}
+
+app.on('second-instance', showMainWindow);
+
 app.whenReady().then(() => {
+  if (allowQuit) return;
+  if (process.platform === 'win32') app.setAppUserModelId('com.modugate.desktop');
   settingsStore = new SettingsStore(path.join(app.getPath('userData'), 'settings.json'), safeStorage);
   const runtimeRoot = app.isPackaged
     ? path.join(process.resourcesPath, 'runtime')
@@ -187,6 +377,7 @@ app.whenReady().then(() => {
     safeStorage,
     onLog: (message, level) => processManager?.log(message, level)
   });
+  imageHistoryStore = new ImageHistoryStore(path.join(app.getPath('userData'), 'image-history'), { maxItems: 24 });
   processManager = new ProcessManager(
     (entry) => sendToMain('service:log', entry),
     integratedRuntime,
@@ -194,14 +385,13 @@ app.whenReady().then(() => {
   );
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
   registerIpc();
+  createTray();
   createWindow();
   const settings = settingsStore.load();
   if (['cliproxy', 'integrated'].includes(settings.service.mode)) {
     processManager.startService(settings.service).catch((error) => processManager.log(error.message, 'error'));
   }
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
+  app.on('activate', showMainWindow);
 });
 
 app.on('before-quit', (event) => {
@@ -215,5 +405,5 @@ app.on('before-quit', (event) => {
   });
 });
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  // Keep the process and local services alive until the tray menu explicitly exits.
 });

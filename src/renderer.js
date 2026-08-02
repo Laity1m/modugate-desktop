@@ -5,6 +5,7 @@ const pageMeta = {
   dashboard: ['WORKSPACE OVERVIEW', '运行概览'],
   connection: ['GATEWAY CONNECTION', '网关连接'],
   playground: ['PROTOCOL PLAYGROUND', '协议测试台'],
+  images: ['IMAGE WORKSHOP', '图片工坊'],
   clients: ['CLIENT COMPATIBILITY', '客户端实验室'],
   service: ['LOCAL ORCHESTRATION', '服务与日志'],
   security: ['SECURITY & TRUST', '安全说明']
@@ -23,8 +24,12 @@ const state = {
   activePreset: 'codex',
   activeTool: 'hermes',
   apiRequestId: null,
+  imageRequestId: null,
+  imageMode: 'generate',
+  referenceImages: [],
   toolRequestId: null,
-  toolStatus: {}
+  toolStatus: {},
+  lanQrRequest: 0
 };
 
 function toast(message, type = 'info') {
@@ -41,6 +46,8 @@ function setPage(page) {
   const meta = pageMeta[page] || pageMeta.dashboard;
   $('#page-eyebrow').textContent = meta[0];
   $('#page-title').textContent = meta[1];
+  $('.content-scroll').scrollTop = 0;
+  if (page === 'images') refreshImageHistory().catch(() => {});
 }
 
 function readFormSettings() {
@@ -61,6 +68,7 @@ function readFormSettings() {
     },
     service: {
       mode,
+      allowLan: $('#lan-access-enabled').checked,
       composeFile: $('#compose-file').value.trim(),
       binaryPath: $('#binary-path').value.trim(),
       workingDirectory: $('#working-directory').value.trim(),
@@ -70,6 +78,13 @@ function readFormSettings() {
       hermesPath: $('#hermes-path').value.trim() || 'hermes',
       codexPath: $('#codex-path').value.trim() || 'codex',
       claudePath: $('#claude-path').value.trim() || 'claude'
+    },
+    images: {
+      model: $('#image-model').value.trim() || 'gpt-image-2',
+      size: $('#image-size').value,
+      quality: $('#image-quality').value,
+      outputFormat: $('#image-format').value,
+      background: $('#image-background').value
     }
   };
 }
@@ -81,11 +96,17 @@ function applySettings(settings) {
   $('#default-model').value = settings.connection.defaultModel || '';
   $('#play-model').value = settings.connection.defaultModel || '';
   $('#tool-model').value = settings.connection.defaultModel || '';
+  $('#image-model').value = settings.images?.model || 'gpt-image-2';
+  $('#image-size').value = settings.images?.size || '1024x1024';
+  $('#image-quality').value = settings.images?.quality || 'auto';
+  $('#image-format').value = settings.images?.outputFormat || 'png';
+  $('#image-background').value = settings.images?.background || 'auto';
   $('#top-endpoint').textContent = settings.connection.baseUrl || '未配置';
   $('#compose-file').value = settings.service.composeFile || '';
   $('#binary-path').value = settings.service.binaryPath || '';
   $('#working-directory').value = settings.service.workingDirectory || '';
   $('#binary-args').value = settings.service.binaryArgs || '';
+  $('#lan-access-enabled').checked = Boolean(settings.service.allowLan);
   const selectedMode = settings.service.mode || 'cliproxy';
   const selectedRadio = $(`input[name="service-mode"][value="${selectedMode}"]`)
     || $('input[name="service-mode"][value="cliproxy"]');
@@ -95,6 +116,7 @@ function applySettings(settings) {
   $('#claude-path').value = settings.tools.claudePath || 'claude';
   renderServiceMode();
   renderServiceMetric();
+  updateImageApiExample();
 }
 
 async function saveSettings(showToast = true) {
@@ -165,6 +187,40 @@ function renderCliProxyAccounts(accounts) {
   });
 }
 
+async function renderLanAccess(credentials = {}, status = {}) {
+  const enabled = Boolean(credentials.lanAccessEnabled);
+  const detail = $('#lan-access-detail');
+  const badge = $('#lan-access-state');
+  const qr = $('#lan-api-qr');
+  const address = credentials.lanApiUrl || '';
+  $('#lan-access-enabled').checked = enabled;
+  detail.classList.toggle('hidden', !enabled);
+  if (!enabled) {
+    qr.removeAttribute('src');
+    return;
+  }
+
+  if (!address) {
+    $('#lan-api-url').textContent = '未检测到可用的 Wi-Fi / 以太网地址';
+    badge.className = 'status-badge offline';
+    badge.textContent = '未检测到局域网';
+    qr.removeAttribute('src');
+    return;
+  }
+
+  $('#lan-api-url').textContent = address;
+  const active = Boolean(status.healthy && status.lanAccessActive);
+  badge.className = `status-badge ${active ? 'online' : 'neutral'}`;
+  badge.textContent = active ? 'API 已监听局域网' : '保存并启动后生效';
+  const request = ++state.lanQrRequest;
+  try {
+    const dataUrl = await window.studio.network.qrCode(address);
+    if (request === state.lanQrRequest) qr.src = dataUrl;
+  } catch {
+    if (request === state.lanQrRequest) qr.removeAttribute('src');
+  }
+}
+
 async function refreshCliProxyInfo() {
   const mode = $('input[name="service-mode"]:checked')?.value || 'cliproxy';
   if (mode !== 'cliproxy') return;
@@ -191,6 +247,7 @@ async function refreshCliProxyInfo() {
         : status.state === 'error'
           ? `启动失败：${status.lastError || '请查看日志'}`
           : '服务尚未启动';
+    await renderLanAccess(credentials, status);
     renderCliProxyAccounts(accounts);
   } catch (error) {
     $('#cliproxy-state').className = 'status-badge offline';
@@ -275,12 +332,258 @@ function renderModels(models) {
     option.value = model;
     list.append(option);
   });
+  const imageList = $('#image-models-list');
+  const knownImageModels = new Set(['gpt-image-2', 'gpt-image-1', 'gpt-image-1-mini']);
+  state.models.filter((model) => /image|imagen|dall|flux|stable.diffusion/i.test(model)).forEach((model) => knownImageModels.add(model));
+  imageList.textContent = '';
+  knownImageModels.forEach((model) => {
+    const option = document.createElement('option');
+    option.value = model;
+    imageList.append(option);
+  });
   $('#metric-models').textContent = String(state.models.length);
   if (!$('#default-model').value && state.models[0]) {
     $('#default-model').value = state.models[0];
     $('#play-model').value = state.models[0];
     $('#tool-model').value = state.models[0];
   }
+}
+
+function cleanIpcError(error) {
+  return String(error?.message || error || '未知错误')
+    .replace(/^Error invoking remote method '[^']+':\s*/i, '')
+    .replace(/^Error:\s*/i, '');
+}
+
+function imageFormOptions() {
+  return {
+    mode: state.imageMode,
+    model: $('#image-model').value.trim() || 'gpt-image-2',
+    prompt: $('#image-prompt').value.trim(),
+    size: $('#image-size').value,
+    quality: $('#image-quality').value,
+    n: Number($('#image-count').value || 1),
+    outputFormat: $('#image-format').value,
+    background: $('#image-background').value,
+    imagePaths: [...state.referenceImages]
+  };
+}
+
+function setImageMode(mode) {
+  state.imageMode = mode === 'edit' ? 'edit' : 'generate';
+  $$('.image-mode-tab').forEach((tab) => {
+    const active = tab.dataset.imageMode === state.imageMode;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', String(active));
+  });
+  $('#reference-block').classList.toggle('hidden', state.imageMode !== 'edit');
+  $('#image-endpoint').textContent = state.imageMode === 'edit' ? '/v1/images/edits' : '/v1/images/generations';
+  $('#run-image').textContent = state.imageMode === 'edit' ? '开始编辑' : '开始生成';
+  $('#image-error').classList.add('hidden');
+  updateImageApiExample();
+}
+
+function updatePromptCount() {
+  $('#image-prompt-count').textContent = String($('#image-prompt').value.length);
+}
+
+function renderReferenceImages() {
+  const list = $('#reference-list');
+  list.textContent = '';
+  if (!state.referenceImages.length) {
+    const empty = document.createElement('p');
+    empty.textContent = '尚未选择参考图片';
+    list.append(empty);
+    return;
+  }
+  state.referenceImages.forEach((filePath, index) => {
+    const row = document.createElement('div');
+    row.className = 'reference-item';
+    const badge = document.createElement('span');
+    badge.textContent = String(index + 1).padStart(2, '0');
+    const name = document.createElement('strong');
+    name.textContent = filePath.split(/[\\/]/).pop() || filePath;
+    name.title = filePath;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = '移除';
+    remove.addEventListener('click', () => {
+      state.referenceImages.splice(index, 1);
+      renderReferenceImages();
+      updateImageApiExample();
+    });
+    row.append(badge, name, remove);
+    list.append(row);
+  });
+}
+
+async function pickReferenceImages() {
+  const selected = await window.studio.dialog.pick('images');
+  if (!Array.isArray(selected) || !selected.length) return;
+  state.referenceImages = selected.slice(0, 4);
+  renderReferenceImages();
+  updateImageApiExample();
+}
+
+function updateImageApiExample() {
+  const baseUrl = ($('#base-url')?.value || 'http://127.0.0.1:8317').replace(/\/+$/, '').replace(/\/v1$/, '');
+  const options = imageFormOptions();
+  const optionLines = [];
+  if (options.size !== 'auto') optionLines.push(`  "size": ${JSON.stringify(options.size)},`);
+  if (options.quality !== 'auto') optionLines.push(`  "quality": ${JSON.stringify(options.quality)},`);
+  if (options.n > 1) optionLines.push(`  "n": ${options.n},`);
+  if (options.outputFormat !== 'png') optionLines.push(`  "output_format": ${JSON.stringify(options.outputFormat)},`);
+  if (options.background !== 'auto') optionLines.push(`  "background": ${JSON.stringify(options.background)},`);
+  const prompt = options.prompt || '在这里填写图片提示词';
+  let example;
+  if (options.mode === 'edit') {
+    example = `curl.exe -X POST "${baseUrl}/v1/images/edits" \`\n  -H "Authorization: Bearer $env:MODUGATE_API_KEY" \`\n  -F "model=${options.model}" \`\n  -F "image=@C:\\path\\reference.png" \`\n  -F ${JSON.stringify(`prompt=${prompt}`)}`;
+  } else {
+    const bodyLines = [
+      `  "model": ${JSON.stringify(options.model)},`,
+      `  "prompt": ${JSON.stringify(prompt)},`,
+      ...optionLines
+    ];
+    bodyLines[bodyLines.length - 1] = bodyLines[bodyLines.length - 1].replace(/,$/, '');
+    example = `curl.exe -X POST "${baseUrl}/v1/images/generations" \`\n  -H "Authorization: Bearer $env:MODUGATE_API_KEY" \`\n  -H "Content-Type: application/json" \`\n  --data-raw '{\n${bodyLines.join('\n')}\n}'`;
+  }
+  $('#image-api-example').textContent = example;
+  return example;
+}
+
+async function copyImageApiExample() {
+  await window.studio.clipboard.writeText(updateImageApiExample());
+  toast('图片 API 示例已复制', 'success');
+}
+
+function setImageRunning(running) {
+  $('#run-image').disabled = running;
+  $('#run-image').textContent = running ? '生成中…' : state.imageMode === 'edit' ? '开始编辑' : '开始生成';
+  $('#cancel-image').classList.toggle('hidden', !running);
+  $('#image-api-state').textContent = running ? 'WORKING' : 'READY';
+  $('#image-result-status').textContent = running ? 'GENERATING' : 'READY';
+  $$('.image-mode-tab').forEach((tab) => { tab.disabled = running; });
+}
+
+function makeImageResultCard(item, compact = false) {
+  const card = document.createElement('article');
+  card.className = compact ? 'history-image-card' : 'generated-image-card';
+  const imageButton = document.createElement('button');
+  imageButton.type = 'button';
+  imageButton.className = 'generated-image-preview';
+  const image = document.createElement('img');
+  image.src = compact ? item.thumbnailDataUrl : item.dataUrl;
+  image.alt = item.prompt ? `生成图片：${item.prompt.slice(0, 80)}` : 'ModuGate 生成图片';
+  imageButton.append(image);
+  if (compact) imageButton.addEventListener('click', () => loadHistoryImage(item.id));
+
+  const detail = document.createElement('div');
+  detail.className = 'generated-image-detail';
+  const title = document.createElement('strong');
+  title.textContent = item.revisedPrompt || item.prompt || '生成图片';
+  const meta = document.createElement('small');
+  const time = item.createdAt ? new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false }) : '';
+  meta.textContent = [item.model, item.size, item.quality, time].filter(Boolean).join(' · ');
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.className = 'button button-secondary';
+  save.textContent = '下载原图';
+  save.addEventListener('click', () => downloadHistoryImage(item.id, save));
+  detail.append(title, meta, save);
+  card.append(imageButton, detail);
+  return card;
+}
+
+function renderImageResults(items, metadata = {}) {
+  const container = $('#image-results');
+  container.textContent = '';
+  container.classList.remove('empty');
+  (items || []).forEach((item) => container.append(makeImageResultCard(item)));
+  $('#image-result-count').textContent = `${items.length} 张图片 · 已自动保存到历史`;
+  if (metadata.status) $('#image-result-status').textContent = `HTTP ${metadata.status}`;
+  if (Number.isFinite(metadata.latencyMs)) $('#image-result-latency').textContent = `${metadata.latencyMs} ms`;
+}
+
+async function runImageRequest() {
+  if (state.imageRequestId) return;
+  const errorBox = $('#image-error');
+  errorBox.classList.add('hidden');
+  const options = imageFormOptions();
+  if (!options.prompt) {
+    errorBox.textContent = '请输入图片提示词。';
+    errorBox.classList.remove('hidden');
+    return;
+  }
+  if (options.mode === 'edit' && !options.imagePaths.length) {
+    errorBox.textContent = '编辑图片时请先选择参考图片。';
+    errorBox.classList.remove('hidden');
+    return;
+  }
+  try {
+    await saveSettings(false);
+    const requestId = crypto.randomUUID();
+    state.imageRequestId = requestId;
+    setImageRunning(true);
+    $('#image-result-latency').textContent = '计算中';
+    const result = await window.studio.images.generate({ requestId, ...options });
+    renderImageResults(result.images || [], result);
+    await refreshImageHistory();
+    toast(`图片${options.mode === 'edit' ? '编辑' : '生成'}完成`, 'success');
+  } catch (error) {
+    const message = cleanIpcError(error);
+    const aborted = /取消|abort/i.test(message);
+    $('#image-result-status').textContent = aborted ? 'CANCELLED' : 'ERROR';
+    $('#image-result-latency').textContent = '— ms';
+    errorBox.textContent = message;
+    errorBox.classList.remove('hidden');
+    if (!aborted) toast(message, 'error');
+  } finally {
+    state.imageRequestId = null;
+    setImageRunning(false);
+  }
+}
+
+async function refreshImageHistory() {
+  const items = await window.studio.images.history();
+  const container = $('#image-history');
+  container.textContent = '';
+  if (!items.length) {
+    const empty = document.createElement('p');
+    empty.className = 'image-history-empty';
+    empty.textContent = '还没有图片历史记录。';
+    container.append(empty);
+    return;
+  }
+  items.forEach((item) => container.append(makeImageResultCard(item, true)));
+}
+
+async function loadHistoryImage(id) {
+  try {
+    const item = await window.studio.images.load(id);
+    renderImageResults([item]);
+    $('.content-scroll').scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (error) {
+    toast(cleanIpcError(error), 'error');
+  }
+}
+
+async function downloadHistoryImage(id, button) {
+  try {
+    button.disabled = true;
+    const result = await window.studio.images.save(id);
+    if (result.saved) toast('图片已保存到指定位置', 'success');
+  } catch (error) {
+    toast(cleanIpcError(error), 'error');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function clearImageHistory() {
+  if (!window.confirm('确定清空本机图片历史吗？该操作会删除历史原图，无法恢复。')) return;
+  const result = await window.studio.images.clearHistory();
+  await refreshImageHistory();
+  toast(`已清理 ${result.cleared || 0} 张历史图片`, 'success');
 }
 
 function setGatewayVisual(result) {
@@ -543,6 +846,29 @@ function bindEvents() {
     input.type = input.type === 'password' ? 'text' : 'password';
     $('#toggle-management-key').textContent = input.type === 'password' ? '显示' : '隐藏';
   });
+  $('#lan-access-enabled').addEventListener('change', async () => {
+    try {
+      await saveSettings(false);
+      await refreshCliProxyInfo();
+      toast($('#lan-access-enabled').checked
+        ? '局域网访问已选择，点击“保存并启动”让设置生效'
+        : '局域网访问已关闭，点击“保存并启动”恢复仅本机监听');
+    } catch (error) {
+      toast(error.message, 'error');
+    }
+  });
+  $('#copy-lan-url').addEventListener('click', async () => {
+    const value = $('#lan-api-url').textContent.trim();
+    if (!/^http:\/\/\d+\.\d+\.\d+\.\d+:\d+\/v1$/.test(value)) return toast('当前没有可复制的局域网地址', 'error');
+    await window.studio.clipboard.writeText(value);
+    toast('手机 Base URL 已复制', 'success');
+  });
+  $('#copy-lan-key').addEventListener('click', async () => {
+    const value = $('#cliproxy-api-key').value.trim();
+    if (!value || value.startsWith('正在')) return toast('API Key 尚未准备好', 'error');
+    await window.studio.clipboard.writeText(value);
+    toast('API Key 已复制，请只发送给你信任的设备', 'success');
+  });
   $$('[data-oauth-provider]').forEach((button) => button.addEventListener('click', () => startOAuth(button.dataset.oauthProvider, button)));
   $$('.preset-tab').forEach((item) => item.addEventListener('click', () => selectPreset(item.dataset.preset)));
   $('#run-play').addEventListener('click', runApiTest);
@@ -551,6 +877,16 @@ function bindEvents() {
     $('#response-output').textContent = '等待下一次请求…';
     $('#response-output').classList.add('empty');
   });
+  $$('.image-mode-tab').forEach((tab) => tab.addEventListener('click', () => setImageMode(tab.dataset.imageMode)));
+  $('#pick-reference-images').addEventListener('click', pickReferenceImages);
+  $('#run-image').addEventListener('click', runImageRequest);
+  $('#cancel-image').addEventListener('click', () => state.imageRequestId && window.studio.images.cancel(state.imageRequestId));
+  $('#copy-image-api').addEventListener('click', copyImageApiExample);
+  $('#copy-image-api-secondary').addEventListener('click', copyImageApiExample);
+  $('#clear-image-history').addEventListener('click', clearImageHistory);
+  $('#image-prompt').addEventListener('input', () => { updatePromptCount(); updateImageApiExample(); });
+  ['#image-model', '#image-size', '#image-quality', '#image-count', '#image-format', '#image-background', '#base-url']
+    .forEach((selector) => $(selector).addEventListener('input', updateImageApiExample));
   $$('[data-select-tool]').forEach((item) => item.addEventListener('click', () => selectTool(item.dataset.selectTool)));
   $('#detect-tools').addEventListener('click', () => detectTools({ notify: true }));
   $('#save-tool-paths').addEventListener('click', async () => { await saveSettings(); await detectTools({ persist: false }); });
@@ -581,6 +917,9 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
+  setImageMode('generate');
+  updatePromptCount();
+  renderReferenceImages();
   try {
     applySettings(await window.studio.settings.get());
     const logs = await window.studio.service.logs();
@@ -592,6 +931,7 @@ async function init() {
     }
     await detectTools({ persist: false });
     await testConnection({ save: false, notify: false });
+    await refreshImageHistory();
   } catch (error) {
     toast(`初始化失败：${error.message}`, 'error');
   }

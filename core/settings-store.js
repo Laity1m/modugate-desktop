@@ -9,6 +9,7 @@ const DEFAULTS = Object.freeze({
   },
   service: {
     mode: 'cliproxy',
+    allowLan: false,
     composeFile: '',
     binaryPath: '',
     workingDirectory: '',
@@ -18,6 +19,13 @@ const DEFAULTS = Object.freeze({
     hermesPath: 'hermes',
     codexPath: 'codex',
     claudePath: 'claude'
+  },
+  images: {
+    model: 'gpt-image-2',
+    size: '1024x1024',
+    quality: 'auto',
+    outputFormat: 'png',
+    background: 'auto'
   }
 });
 
@@ -25,7 +33,8 @@ function mergeSettings(input = {}) {
   return {
     connection: { ...DEFAULTS.connection, ...(input.connection || {}) },
     service: { ...DEFAULTS.service, ...(input.service || {}) },
-    tools: { ...DEFAULTS.tools, ...(input.tools || {}) }
+    tools: { ...DEFAULTS.tools, ...(input.tools || {}) },
+    images: { ...DEFAULTS.images, ...(input.images || {}) }
   };
 }
 

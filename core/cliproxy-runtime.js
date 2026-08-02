@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { isPortOpen, randomSecret, waitFor } = require('./integrated-runtime');
+const { listLanIPv4, makeLanUrl } = require('./network-access');
 
 const OAUTH_PROVIDERS = Object.freeze({
   claude: { label: 'Claude Code', endpoint: 'anthropic-auth-url' },
@@ -52,6 +53,9 @@ class CliProxyRuntime {
     this.safeStorage = options.safeStorage;
     this.onLog = options.onLog || (() => {});
     this.port = Number(options.port || 8317);
+    this.allowLan = Boolean(options.allowLan);
+    this.activeAllowLan = null;
+    this.lanAddressResolver = options.lanAddressResolver || (() => listLanIPv4().map((item) => item.address));
     this.binaryPath = path.join(this.runtimeRoot, 'cli-proxy-api.exe');
     this.configPath = path.join(this.dataRoot, 'config.yaml');
     this.authDir = path.join(this.dataRoot, 'auth');
@@ -63,6 +67,19 @@ class CliProxyRuntime {
     this.state = 'stopped';
     this.lastError = '';
     this.stopping = false;
+  }
+
+  setLanAccess(enabled) {
+    this.allowLan = Boolean(enabled);
+    return this.allowLan;
+  }
+
+  getLanAddresses() {
+    try {
+      return Array.from(new Set(this.lanAddressResolver().filter(Boolean)));
+    } catch {
+      return [];
+    }
   }
 
   log(message, level = 'info') {
@@ -96,7 +113,7 @@ class CliProxyRuntime {
   writeConfig(secrets) {
     fs.mkdirSync(this.authDir, { recursive: true });
     const content = [
-      'host: "127.0.0.1"',
+      `host: "${this.allowLan ? '0.0.0.0' : '127.0.0.1'}"`,
       `port: ${this.port}`,
       'tls:',
       '  enable: false',
@@ -204,7 +221,8 @@ class CliProxyRuntime {
         }
         throw new Error(`端口 ${this.port} 已被其他程序占用`);
       }
-      this.log(`正在启动 CLIProxyAPI 轻量引擎（127.0.0.1:${this.port}）…`);
+      const bindHost = this.allowLan ? '0.0.0.0' : '127.0.0.1';
+      this.log(`正在启动 CLIProxyAPI 轻量引擎（${bindHost}:${this.port}）…`);
       const child = spawn(this.binaryPath, ['-config', this.configPath], {
         cwd: this.dataRoot,
         env: { ...process.env, MANAGEMENT_STATIC_PATH: this.staticDir },
@@ -233,11 +251,16 @@ class CliProxyRuntime {
         message: 'CLIProxyAPI 启动超时，请查看服务日志'
       });
       this.state = 'running';
-      this.log('CLIProxyAPI 轻量引擎已就绪。', 'success');
+      this.activeAllowLan = this.allowLan;
+      this.log(this.allowLan
+        ? 'CLIProxyAPI 已监听局域网；管理接口仍限制为本机访问。'
+        : 'CLIProxyAPI 轻量引擎已就绪。', 'success');
+      const lanAddress = this.getLanAddresses()[0] || '';
       return {
         started: true,
         mode: 'cliproxy',
         url: `http://127.0.0.1:${this.port}`,
+        lanUrl: this.allowLan ? makeLanUrl(lanAddress, this.port, 'v1') : '',
         message: 'CLIProxyAPI 轻量引擎已启动'
       };
     } catch (error) {
@@ -266,11 +289,17 @@ class CliProxyRuntime {
   getCredentials() {
     const secrets = this.loadOrCreateSecrets();
     const root = `http://127.0.0.1:${this.port}`;
+    const lanAddresses = this.getLanAddresses();
+    const lanRoot = this.allowLan ? makeLanUrl(lanAddresses[0], this.port) : '';
     return {
       url: root,
       apiKey: secrets.apiKey,
       managementKey: secrets.managementKey,
-      consoleUrl: `${root}/management.html?safe-mode=configure`
+      consoleUrl: `${root}/management.html?safe-mode=configure`,
+      lanAccessEnabled: this.allowLan,
+      lanAddresses,
+      lanUrl: lanRoot,
+      lanApiUrl: lanRoot ? `${lanRoot}/v1` : ''
     };
   }
 
@@ -328,6 +357,8 @@ class CliProxyRuntime {
       healthy,
       lastError: this.lastError,
       port: this.port,
+      lanAccessEnabled: this.allowLan,
+      lanAccessActive: healthy && this.activeAllowLan === true,
       accountCount: healthy ? (await this.getAccounts().catch(() => [])).length : 0
     };
   }

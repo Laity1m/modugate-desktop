@@ -35,3 +35,24 @@ test('CLIProxy runtime exposes supported OAuth providers', () => {
   assert.deepEqual(Object.keys(OAUTH_PROVIDERS).sort(), ['claude', 'codex', 'google', 'kimi', 'xai']);
   assert.equal(OAUTH_PROVIDERS.codex.endpoint, 'codex-auth-url');
 });
+
+test('CLIProxy runtime can expose only the API on the local network', (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'modugate-lan-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const runtime = new CliProxyRuntime({
+    dataRoot: directory,
+    port: 28318,
+    allowLan: true,
+    lanAddressResolver: () => ['192.168.1.107']
+  });
+  const credentials = runtime.getCredentials();
+  const secrets = runtime.loadOrCreateSecrets();
+  runtime.writeConfig(secrets);
+  const config = fs.readFileSync(path.join(directory, 'config.yaml'), 'utf8');
+
+  assert.equal(credentials.url, 'http://127.0.0.1:28318');
+  assert.equal(credentials.lanUrl, 'http://192.168.1.107:28318');
+  assert.equal(credentials.lanApiUrl, 'http://192.168.1.107:28318/v1');
+  assert.match(config, /^host: "0\.0\.0\.0"$/m);
+  assert.match(config, /^  allow-remote: false$/m);
+});
