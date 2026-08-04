@@ -34,14 +34,20 @@ const DEFAULTS = Object.freeze({
     selectedAccountId: '',
     accounts: []
   },
+  agnes: {
+    baseUrl: 'https://apihub.agnes-ai.com',
+    apiKey: '',
+    pollIntervalSeconds: 10,
+    timeoutSeconds: 900
+  },
   router: {
     enabled: true,
     port: 8787,
     apiKey: ''
   },
   videos: {
-    model: 'jimeng-video-seedance-2.0-fast',
-    connectionKind: 'jimeng',
+    model: 'agnes-video-v2.0',
+    connectionKind: 'agnes',
     protocol: 'videos',
     referenceMode: 'first_last_frames',
     ratio: '16:9',
@@ -57,6 +63,7 @@ function mergeSettings(input = {}) {
   return {
     connection: { ...DEFAULTS.connection, ...(input.connection || {}) },
     jimeng: { ...DEFAULTS.jimeng, ...(input.jimeng || {}), accounts },
+    agnes: { ...DEFAULTS.agnes, ...(input.agnes || {}) },
     router: { ...DEFAULTS.router, ...(input.router || {}) },
     service: { ...DEFAULTS.service, ...(input.service || {}) },
     tools: { ...DEFAULTS.tools, ...(input.tools || {}) },
@@ -94,6 +101,7 @@ class SettingsStore {
       const settings = mergeSettings(raw);
       settings.connection.apiKey = this.decrypt(settings.connection.apiKey);
       settings.router.apiKey = this.decrypt(settings.router.apiKey);
+      settings.agnes.apiKey = this.decrypt(settings.agnes.apiKey);
       settings.jimeng.accounts = settings.jimeng.accounts.map((account) => ({
         ...account,
         sessionId: this.decrypt(account.sessionId)
@@ -116,6 +124,7 @@ class SettingsStore {
     const persisted = mergeSettings(settings);
     persisted.connection.apiKey = this.encrypt(settings.connection.apiKey);
     persisted.router.apiKey = this.encrypt(settings.router.apiKey);
+    persisted.agnes.apiKey = this.encrypt(settings.agnes.apiKey);
     persisted.jimeng.accounts = settings.jimeng.accounts.map((account) => ({
       ...account,
       sessionId: this.encrypt(account.sessionId)

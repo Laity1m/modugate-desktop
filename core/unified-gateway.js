@@ -2,6 +2,8 @@ const http = require('node:http');
 const { Readable } = require('node:stream');
 const { authHeaders, normalizeGatewayUrl } = require('./api-client');
 const { jimengCredential } = require('./jimeng-api');
+const { generateAgnesVideo } = require('./agnes-api');
+const { listLanIPv4, makeLanUrl } = require('./network-access');
 
 const MAX_PROXY_BODY_BYTES = 160 * 1024 * 1024;
 
@@ -21,8 +23,14 @@ function isJimengModel(model) {
   return /^(?:jimeng|seedance|dreamina)(?:[-_]|$)/i.test(String(model || '').trim());
 }
 
-function selectUpstream(pathname, model, hasJimengAccount) {
+function isAgnesModel(model) {
+  return /^agnes(?:[-_]|$)/i.test(String(model || '').trim());
+}
+
+function selectUpstream(pathname, model, hasJimengAccount, hasAgnesKey = false, defaultVideoProvider = '') {
+  if (isAgnesModel(model)) return 'agnes';
   if (isJimengModel(model)) return 'jimeng';
+  if (!model && hasAgnesKey && defaultVideoProvider === 'agnes' && /^\/v1\/videos(?:\/|$)/i.test(pathname)) return 'agnes';
   if (!model && hasJimengAccount && /^\/v1\/videos(?:\/|$)/i.test(pathname)) return 'jimeng';
   return 'main';
 }
@@ -60,12 +68,14 @@ function jsonResponse(response, statusCode, body) {
 }
 
 class UnifiedGateway {
-  constructor({ getSettings, ensureJimeng = async () => {}, onLog = () => {} }) {
+  constructor({ getSettings, ensureJimeng = async () => {}, generateAgnes = generateAgnesVideo, onLog = () => {} }) {
     this.getSettings = getSettings;
     this.ensureJimeng = ensureJimeng;
+    this.generateAgnes = generateAgnes;
     this.onLog = onLog;
     this.server = null;
     this.address = null;
+    this.boundHost = null;
   }
 
   async start() {
@@ -81,7 +91,9 @@ class UnifiedGateway {
     });
     await new Promise((resolve, reject) => {
       this.server.once('error', reject);
-      this.server.listen(port, '127.0.0.1', resolve);
+      const host = settings.service?.allowLan ? '0.0.0.0' : '127.0.0.1';
+      this.boundHost = host;
+      this.server.listen(port, host, resolve);
     });
     const info = this.server.address();
     this.address = `http://127.0.0.1:${info.port}`;
@@ -94,12 +106,22 @@ class UnifiedGateway {
     const server = this.server;
     this.server = null;
     this.address = null;
+    this.boundHost = null;
     await new Promise((resolve) => server.close(resolve));
     return true;
   }
 
   status() {
-    return { running: Boolean(this.server), root: this.address, apiBase: this.address ? `${this.address}/v1` : '' };
+    const settings = this.getSettings();
+    const port = Number(settings.router?.port ?? 8787);
+    const lanAddress = this.boundHost === '0.0.0.0' ? listLanIPv4()[0]?.address : '';
+    return {
+      running: Boolean(this.server),
+      root: this.address,
+      apiBase: this.address ? `${this.address}/v1` : '',
+      lanApiBase: lanAddress ? makeLanUrl(lanAddress, port, 'v1') : '',
+      allowLan: this.boundHost === '0.0.0.0'
+    };
   }
 
   async handle(request, response) {
@@ -126,10 +148,40 @@ class UnifiedGateway {
     const body = ['GET', 'HEAD'].includes(request.method || '') ? Buffer.alloc(0) : await readRequestBody(request);
     const model = extractRequestModel(request.headers['content-type'], body);
     const hasJimengAccount = Boolean(settings.jimeng?.accounts?.some((item) => item.id === settings.jimeng.selectedAccountId));
-    const target = selectUpstream(url.pathname, model, hasJimengAccount);
+    const hasAgnesKey = Boolean(settings.agnes?.apiKey);
+    const target = selectUpstream(url.pathname, model, hasJimengAccount, hasAgnesKey, settings.videos?.connectionKind);
+    if (target === 'agnes') {
+      await this.handleAgnes(response, request, url, body, settings);
+      return;
+    }
     if (target === 'jimeng') await this.ensureJimeng();
     const connection = this.connectionFor(target, settings);
     await this.forward(request, response, url, body, connection, target);
+  }
+
+  async handleAgnes(response, request, url, body, settings) {
+    if (request.method !== 'POST' || url.pathname !== '/v1/videos/generations') {
+      jsonResponse(response, 404, { error: { message: 'Agnes 当前仅支持 POST /v1/videos/generations' } });
+      return;
+    }
+    if (!/application\/json/i.test(request.headers['content-type'] || '')) {
+      jsonResponse(response, 415, { error: { message: 'Agnes 统一接口当前仅支持 JSON 文生视频请求' } });
+      return;
+    }
+    let payload;
+    try { payload = JSON.parse(body.toString('utf8')); } catch {
+      jsonResponse(response, 400, { error: { message: '请求 JSON 格式无效' } });
+      return;
+    }
+    const result = await this.generateAgnes(settings.agnes, payload, { timeoutMs: Number(settings.agnes?.timeoutSeconds || 900) * 1000 });
+    jsonResponse(response, 200, {
+      id: result.taskId,
+      object: 'video.generation',
+      status: result.state,
+      created: Math.floor(Date.now() / 1000),
+      data: result.urls.map((videoUrl) => ({ url: videoUrl }))
+    });
+    this.onLog(`统一 API：POST ${url.pathname} → agnes`, 'info');
   }
 
   connectionFor(target, settings) {
@@ -166,6 +218,9 @@ class UnifiedGateway {
         // A temporarily unavailable upstream must not hide models from the other one.
       }
     }));
+    if (settings.agnes?.apiKey && !collected.some((entry) => entry.id === 'agnes-video-v2.0')) {
+      collected.push({ id: 'agnes-video-v2.0', object: 'model', owned_by: 'agnes-ai' });
+    }
     jsonResponse(response, 200, { object: 'list', data: collected });
   }
 
@@ -210,6 +265,7 @@ module.exports = {
   MAX_PROXY_BODY_BYTES,
   extractRequestModel,
   isJimengModel,
+  isAgnesModel,
   selectUpstream,
   UnifiedGateway
 };

@@ -16,8 +16,10 @@ test('mergeSettings preserves defaults for partial input', () => {
   assert.equal(value.service.allowLan, false);
   assert.equal(value.tools.codexPath, 'codex');
   assert.equal(value.images.model, 'gpt-image-2');
-  assert.equal(value.videos.model, 'jimeng-video-seedance-2.0-fast');
-  assert.equal(value.videos.connectionKind, 'jimeng');
+  assert.equal(value.agnes.baseUrl, 'https://apihub.agnes-ai.com');
+  assert.equal(value.agnes.apiKey, '');
+  assert.equal(value.videos.model, 'agnes-video-v2.0');
+  assert.equal(value.videos.connectionKind, 'agnes');
   assert.equal(value.videos.protocol, 'videos');
   assert.equal(value.videos.referenceMode, 'first_last_frames');
 });
@@ -42,7 +44,8 @@ test('SettingsStore encrypts and decrypts API and Jimeng credentials', (t) => {
     jimeng: {
       selectedAccountId: 'account_12345678',
       accounts: [{ id: 'account_12345678', name: '我的即梦', region: 'cn', sessionId: 'session-secret-1234' }]
-    }
+    },
+    agnes: { baseUrl: 'https://apihub.agnes-ai.com', apiKey: 'agnes-secret' }
   });
   const raw = fs.readFileSync(file, 'utf8');
   assert.equal(raw.includes('sk-secret'), false);
@@ -50,6 +53,7 @@ test('SettingsStore encrypts and decrypts API and Jimeng credentials', (t) => {
   assert.equal(raw.includes('mg-'), false);
   assert.equal(store.load().connection.apiKey, 'sk-secret');
   assert.equal(store.load().jimeng.accounts[0].sessionId, 'session-secret-1234');
+  assert.equal(store.load().agnes.apiKey, 'agnes-secret');
   assert.match(store.load().router.apiKey, /^mg-/);
 });
 

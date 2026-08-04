@@ -78,6 +78,12 @@ function readFormSettings() {
       selectedAccountId: state.settings?.jimeng?.selectedAccountId || '',
       accounts: state.jimengAccounts.map(({ id, name, region, sessionId }) => ({ id, name, region, sessionId }))
     },
+    agnes: {
+      baseUrl: $('#agnes-base-url').value.trim() || 'https://apihub.agnes-ai.com',
+      apiKey: $('#agnes-api-key').value.trim(),
+      pollIntervalSeconds: state.settings?.agnes?.pollIntervalSeconds || 10,
+      timeoutSeconds: state.settings?.agnes?.timeoutSeconds || 900
+    },
     router: {
       enabled: true,
       port: state.settings?.router?.port || 8787,
@@ -104,8 +110,8 @@ function readFormSettings() {
       background: $('#image-background').value
     },
     videos: {
-      model: $('#video-model').value.trim() || 'jimeng-video-seedance-2.0-fast',
-      connectionKind: $('#video-connection-kind').value === 'main' ? 'main' : 'jimeng',
+      model: $('#video-model').value.trim() || 'agnes-video-v2.0',
+      connectionKind: ['main', 'jimeng', 'agnes'].includes($('#video-connection-kind').value) ? $('#video-connection-kind').value : 'agnes',
       protocol: $('#video-protocol').value,
       referenceMode: $('#video-reference-mode').value,
       ratio: $('#video-ratio').value,
@@ -120,6 +126,8 @@ function applySettings(settings) {
   $('#base-url').value = settings.connection.baseUrl || '';
   $('#api-key').value = settings.connection.apiKey || '';
   $('#jimeng-gateway-url').value = settings.jimeng?.gatewayUrl || 'http://127.0.0.1:8001';
+  $('#agnes-base-url').value = settings.agnes?.baseUrl || 'https://apihub.agnes-ai.com';
+  $('#agnes-api-key').value = settings.agnes?.apiKey || '';
   $('#unified-api-key').value = settings.router?.apiKey || '';
   $('#unified-api-url').textContent = `http://127.0.0.1:${settings.router?.port || 8787}/v1`;
   state.jimengAccounts = Array.isArray(settings.jimeng?.accounts) ? settings.jimeng.accounts.map((item) => ({ ...item })) : [];
@@ -131,8 +139,8 @@ function applySettings(settings) {
   $('#image-quality').value = settings.images?.quality || 'auto';
   $('#image-format').value = settings.images?.outputFormat || 'png';
   $('#image-background').value = settings.images?.background || 'auto';
-  $('#video-model').value = settings.videos?.model || 'jimeng-video-seedance-2.0-fast';
-  $('#video-connection-kind').value = settings.videos?.connectionKind === 'main' ? 'main' : 'jimeng';
+  $('#video-model').value = settings.videos?.model || 'agnes-video-v2.0';
+  $('#video-connection-kind').value = ['main', 'jimeng', 'agnes'].includes(settings.videos?.connectionKind) ? settings.videos.connectionKind : 'agnes';
   $('#video-protocol').value = settings.videos?.protocol || 'videos';
   $('#video-reference-mode').value = settings.videos?.referenceMode || 'first_last_frames';
   $('#video-ratio').value = settings.videos?.ratio || '16:9';
@@ -383,6 +391,7 @@ function renderModels(models) {
   });
   const videoList = $('#video-models-list');
   const knownVideoModels = new Set([
+    'agnes-video-v2.0',
     'jimeng-video-seedance-2.0-fast',
     'jimeng-video-seedance-2.0-pro',
     'jimeng-video-seedance-1.5-pro',
@@ -642,10 +651,11 @@ async function clearImageHistory() {
 }
 
 function videoFormOptions() {
+  const connectionKind = ['main', 'jimeng', 'agnes'].includes($('#video-connection-kind').value) ? $('#video-connection-kind').value : 'agnes';
   return {
-    connectionKind: $('#video-connection-kind').value === 'main' ? 'main' : 'jimeng',
+    connectionKind,
     protocol: $('#video-protocol').value === 'chat' ? 'chat' : 'videos',
-    model: $('#video-model').value.trim() || 'jimeng-video-seedance-2.0-fast',
+    model: $('#video-model').value.trim() || (connectionKind === 'agnes' ? 'agnes-video-v2.0' : 'jimeng-video-seedance-2.0-fast'),
     prompt: $('#video-prompt').value.trim(),
     ratio: $('#video-ratio').value,
     resolution: $('#video-resolution').value,
@@ -657,11 +667,28 @@ function videoFormOptions() {
   };
 }
 
+function setVideoConnectionKind(kind) {
+  const selected = ['main', 'jimeng', 'agnes'].includes(kind) ? kind : 'agnes';
+  $('#video-connection-kind').value = selected;
+  if (selected === 'agnes') {
+    if (!/^agnes(?:[-_]|$)/i.test($('#video-model').value)) $('#video-model').value = 'agnes-video-v2.0';
+    $('#video-protocol').value = 'videos';
+    $('#video-protocol').disabled = true;
+    state.videoReferences = [];
+    renderVideoReferenceImages();
+  } else {
+    $('#video-protocol').disabled = false;
+  }
+  setVideoConnectionKind($('#video-connection-kind').value);
+  $('#video-reference-block').classList.toggle('hidden', selected === 'agnes' || $('#video-protocol').value === 'chat');
+  updateVideoApiExample();
+}
+
 function setVideoProtocol(protocol) {
-  const selected = protocol === 'chat' ? 'chat' : 'videos';
+  const selected = $('#video-connection-kind').value === 'agnes' ? 'videos' : protocol === 'chat' ? 'chat' : 'videos';
   $('#video-protocol').value = selected;
   $('#video-endpoint').textContent = selected === 'chat' ? '/v1/chat/completions' : '/v1/videos/generations';
-  $('#video-reference-block').classList.toggle('hidden', selected === 'chat');
+  $('#video-reference-block').classList.toggle('hidden', selected === 'chat' || $('#video-connection-kind').value === 'agnes');
   updateVideoApiExample();
   renderJimengAccounts();
   refreshRouterStatus().catch(() => {});
@@ -1130,7 +1157,7 @@ async function checkJimengAccount(id) {
 async function refreshRouterStatus() {
   const result = await window.studio.router.status();
   state.routerRunning = Boolean(result.running);
-  if (result.apiBase) $('#unified-api-url').textContent = result.apiBase;
+  if (result.apiBase) $('#unified-api-url').textContent = result.allowLan && result.lanApiBase ? result.lanApiBase : result.apiBase;
   if (result.apiKey) $('#unified-api-key').value = result.apiKey;
   renderJimengAccounts();
   updateVideoApiExample();
@@ -1151,6 +1178,19 @@ async function applyJimengPreset() {
   await saveSettings(false);
   if (!state.jimengAccounts.length) openJimengAccountForm();
   toast('已应用即梦视频预设；主网关地址和 API Key 未被修改', 'success');
+}
+
+async function applyAgnesPreset() {
+  $('#agnes-base-url').value = 'https://apihub.agnes-ai.com';
+  $('#video-model').value = 'agnes-video-v2.0';
+  $('#video-ratio').value = '16:9';
+  $('#video-resolution').value = '720p';
+  $('#video-duration').value = '5';
+  setVideoConnectionKind('agnes');
+  await saveSettings(false);
+  toast($('#agnes-api-key').value.trim()
+    ? 'Agnes 视频中转已启用'
+    : '已应用 Agnes 预设，请填写 API Key 后保存', $('#agnes-api-key').value.trim() ? 'success' : 'info');
 }
 
 function selectPreset(preset) {
@@ -1350,6 +1390,7 @@ function bindEvents() {
   $('#quick-console').addEventListener('click', openConsole);
   $('#open-console').addEventListener('click', openConsole);
   $('#apply-jimeng-preset').addEventListener('click', applyJimengPreset);
+  $('#apply-agnes-preset').addEventListener('click', applyAgnesPreset);
   $('#open-jimeng-account-form').addEventListener('click', openJimengAccountForm);
   $('#add-jimeng-account').addEventListener('click', openJimengAccountForm);
   $('#cancel-jimeng-account').addEventListener('click', closeJimengAccountForm);
@@ -1358,6 +1399,11 @@ function bindEvents() {
     const input = $('#jimeng-sessionid');
     input.type = input.type === 'password' ? 'text' : 'password';
     $('#toggle-jimeng-sessionid').textContent = input.type === 'password' ? '显示' : '隐藏';
+  });
+  $('#toggle-agnes-key').addEventListener('click', () => {
+    const input = $('#agnes-api-key');
+    input.type = input.type === 'password' ? 'text' : 'password';
+    $('#toggle-agnes-key').textContent = input.type === 'password' ? '显示' : '隐藏';
   });
   $('#toggle-unified-key').addEventListener('click', () => {
     const input = $('#unified-api-key');
@@ -1438,7 +1484,7 @@ function bindEvents() {
   ['#image-model', '#image-size', '#image-quality', '#image-count', '#image-format', '#image-background', '#base-url']
     .forEach((selector) => $(selector).addEventListener('input', updateImageApiExample));
   $('#video-protocol').addEventListener('change', () => setVideoProtocol($('#video-protocol').value));
-  $('#video-connection-kind').addEventListener('change', updateVideoApiExample);
+  $('#video-connection-kind').addEventListener('change', () => setVideoConnectionKind($('#video-connection-kind').value));
   $('#video-reference-mode').addEventListener('change', () => setVideoReferenceMode($('#video-reference-mode').value));
   $('#pick-video-images').addEventListener('click', pickVideoReferences);
   $('#run-video').addEventListener('click', runVideoRequest);

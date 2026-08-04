@@ -1,7 +1,7 @@
 {
   "name": "modugate-desktop",
-  "version": "0.4.2",
-  "description": "Windows desktop console for local AI gateways, image and video generation testing, and API compatibility",
+  "version": "0.5.0",
+  "description": "Windows AI gateway with Agnes video relay, image generation, LAN access, and API compatibility",
   "main": "main.js",
   "author": "Laity1m and ModuGate contributors",
   "license": "MIT",

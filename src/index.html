@@ -126,6 +126,12 @@
               <article class="panel compact-panel jimeng-preset-card">
                 <p class="section-kicker">JIMENG ACCOUNT</p><h3>即梦账号</h3><p>添加自己的 sessionid 后，图片和视频模型会通过统一 API 自动分流，不会覆盖主网关。</p><div class="compact-actions"><button class="button button-primary full" id="open-jimeng-account-form">添加即梦账号</button><button class="button button-secondary full" id="apply-jimeng-preset">应用视频预设</button></div>
               </article>
+              <article class="panel compact-panel">
+                <p class="section-kicker">AGNES VIDEO</p><h3>Agnes 视频中转</h3><p>使用 Agnes 官方 API Key。ModuGate 会自动提交任务、轮询状态，并向电脑或手机客户端一次性返回最终视频地址。</p>
+                <label class="field"><span>API 地址</span><input id="agnes-base-url" type="url" value="https://apihub.agnes-ai.com"></label>
+                <label class="field"><span>API Key</span><div class="input-wrap"><input id="agnes-api-key" type="password" autocomplete="off" placeholder="粘贴 Agnes API Key"><button type="button" class="input-action" id="toggle-agnes-key">显示</button></div><small>使用 Windows 安全存储加密，仅保存在本机。</small></label>
+                <div class="compact-actions"><button class="button button-primary full" id="apply-agnes-preset">应用 Agnes 预设</button><button class="button button-secondary full" data-doc="https://platform.agnes-ai.com/">打开 Agnes 平台</button></div>
+              </article>
             </aside>
           </div>
 
@@ -232,18 +238,18 @@
           <div class="image-studio-layout video-studio-layout">
             <article class="panel image-composer-panel">
               <div class="video-workshop-head">
-                <div><p class="section-kicker">VIDEO GENERATION</p><h3>视频接口测试</h3><p>兼容标准视频生成接口与部分即梦反代使用的聊天接口。</p></div>
+                <div><p class="section-kicker">VIDEO GENERATION</p><h3>视频接口测试</h3><p>支持 Agnes 正式 API 自动轮询，以及即梦和 OpenAI 兼容视频接口。</p></div>
                 <span class="status-badge neutral" id="video-api-state">READY</span>
               </div>
               <div class="image-composer-body">
                 <div class="request-meta"><span>POST</span><code id="video-endpoint">/v1/videos/generations</code><b>LONG TASK</b></div>
                 <div class="image-form-grid">
-                  <label class="field field-wide"><span>视频模型</span><input id="video-model" list="video-models-list" value="jimeng-video-seedance-2.0-fast" placeholder="jimeng-video-seedance-2.0-fast"><datalist id="video-models-list"><option value="jimeng-video-seedance-2.0-fast"></option><option value="jimeng-video-seedance-2.0-pro"></option><option value="jimeng-video-seedance-1.5-pro"></option><option value="jimeng-video-3.0-pro"></option><option value="jimeng-video-3.0"></option></datalist></label>
-                  <label class="field field-wide"><span>接口来源</span><select id="video-connection-kind"><option value="jimeng">即梦账号 · 独立连接</option><option value="main">主 AI 网关</option></select><small>即梦连接与 GPT/Claude 主网关彼此独立；统一 API 会在对外调用时自动分流。</small></label>
+                  <label class="field field-wide"><span>视频模型</span><input id="video-model" list="video-models-list" value="agnes-video-v2.0" placeholder="agnes-video-v2.0"><datalist id="video-models-list"><option value="agnes-video-v2.0"></option><option value="jimeng-video-seedance-2.0-fast"></option><option value="jimeng-video-seedance-2.0-pro"></option><option value="jimeng-video-seedance-1.5-pro"></option><option value="jimeng-video-3.0-pro"></option><option value="jimeng-video-3.0"></option></datalist></label>
+                  <label class="field field-wide"><span>接口来源</span><select id="video-connection-kind"><option value="agnes">Agnes API · 正式密钥</option><option value="jimeng">即梦账号 · 独立连接</option><option value="main">主 AI 网关</option></select><small>统一 API 会按模型名自动分流；Agnes 会在后台轮询到视频完成后再返回。</small></label>
                   <label class="field field-wide"><span>接口类型</span><select id="video-protocol"><option value="videos">视频生成 · /v1/videos/generations</option><option value="chat">聊天兼容 · /v1/chat/completions</option></select></label>
                   <label class="field"><span>画面比例</span><select id="video-ratio"><option value="16:9">16:9 横屏</option><option value="9:16">9:16 竖屏</option><option value="1:1">1:1 方形</option><option value="4:3">4:3</option><option value="3:4">3:4</option><option value="21:9">21:9 超宽</option></select></label>
                   <label class="field"><span>清晰度</span><select id="video-resolution"><option value="480p">480p</option><option value="720p" selected>720p</option><option value="1080p">1080p</option><option value="auto">自动</option></select></label>
-                  <label class="field"><span>时长（秒）</span><input id="video-duration" type="number" min="4" max="15" step="1" value="5"><small>Seedance 2.0 支持 4–15 秒；其他模型通常为 5/10 秒</small></label>
+                  <label class="field"><span>时长（秒）</span><input id="video-duration" type="number" min="1" max="18" step="1" value="5"><small>Agnes 会自动换算为 8n+1 帧；Seedance 2.0 支持 4–15 秒</small></label>
                   <label class="field"><span>参考模式</span><select id="video-reference-mode"><option value="first_last_frames">首帧 / 尾帧</option><option value="omni_reference">全能参考 · @引用</option></select></label>
                 </div>
                 <label class="field image-prompt-field"><span>视频提示词</span><textarea id="video-prompt" maxlength="32000" placeholder="描述镜头、主体动作、环境、光线和风格……">电影感航拍镜头穿过雨后的未来城市，霓虹灯倒映在街道上，镜头平稳向前推进，16:9。</textarea><small><span id="video-prompt-count">0</span> / 32000</small></label>
@@ -274,7 +280,7 @@
           </div>
 
           <article class="panel api-example-panel">
-            <div class="panel-title-row"><div><p class="section-kicker">API EXAMPLE</p><h3>视频接口调用示例</h3><p>密钥通过环境变量读取；即梦 sessionid 不会出现在复制的代码中。</p></div><button class="button button-secondary" id="copy-video-api-secondary">复制代码</button></div>
+            <div class="panel-title-row"><div><p class="section-kicker">API EXAMPLE</p><h3>视频接口调用示例</h3><p>客户端只使用 ModuGate 统一密钥；Agnes Key 和即梦凭证都不会出现在复制的代码中。</p></div><button class="button button-secondary" id="copy-video-api-secondary">复制代码</button></div>
             <pre id="video-api-example"></pre>
           </article>
         </section>

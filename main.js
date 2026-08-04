@@ -20,6 +20,7 @@ const { IntegratedRuntime } = require('./core/integrated-runtime');
 const { CliProxyRuntime } = require('./core/cliproxy-runtime');
 const { generateImages } = require('./core/image-api');
 const { generateVideo, safeHttpUrl } = require('./core/video-api');
+const { generateAgnesVideo } = require('./core/agnes-api');
 const { checkJimengAccount, jimengCredential } = require('./core/jimeng-api');
 const { JimengRuntime } = require('./core/jimeng-runtime');
 const { UnifiedGateway } = require('./core/unified-gateway');
@@ -151,6 +152,11 @@ function registerIpc() {
     const settings = settingsStore.save(value);
     if (settings.jimeng.accounts.length) await jimengRuntime.ensureForUrl(settings.jimeng.gatewayUrl);
     else await jimengRuntime.stop();
+    const desiredRouterHost = settings.service.allowLan ? '0.0.0.0' : '127.0.0.1';
+    if (unifiedGateway?.server && unifiedGateway.boundHost !== desiredRouterHost) {
+      await unifiedGateway.stop();
+      await unifiedGateway.start();
+    }
     return settings;
   });
   ipcMain.handle('gateway:test', (_event, override) => {
@@ -250,6 +256,12 @@ function registerIpc() {
     videoControllers.set(requestId, controller);
     try {
       const settings = settingsStore.load();
+      if (payload?.connectionKind === 'agnes') {
+        return await generateAgnesVideo(settings.agnes, payload, {
+          signal: controller.signal,
+          timeoutMs: Number(settings.agnes.timeoutSeconds || 900) * 1000
+        });
+      }
       let connection = settings.connection;
       if (payload?.connectionKind === 'jimeng') {
         const account = settings.jimeng.accounts.find((item) => item.id === settings.jimeng.selectedAccountId);

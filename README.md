@@ -4,13 +4,20 @@
 
 [下载最新版](https://github.com/Laity1m/modugate-desktop/releases/latest) · [安全说明](SECURITY.md) · [第三方组件](THIRD_PARTY_NOTICES.md)
 
-ModuGate 把账号授权、本地网关和 AI 开发工具集中到一个可视化桌面界面中。官方一体化安装包内置轻量 CLIProxyAPI、完整 Sub2API 以及独立的即梦兼容运行环境，无需另外配置 Docker、PostgreSQL 或 Redis。统一 API 会根据模型名称自动把文本请求和即梦图片/视频请求分发到对应的内部服务。
+ModuGate 把账号授权、本地网关和 AI 开发工具集中到一个可视化桌面界面中。官方一体化安装包内置轻量 CLIProxyAPI、完整 Sub2API 以及独立的即梦兼容运行环境，无需另外配置 Docker、PostgreSQL 或 Redis。统一 API 会根据模型名称自动分发文本、图片和视频请求，并新增 Agnes 正式 API 视频中转。
 
-## 当前版本：v0.4.2
+## 当前版本：v0.5.0
 
 **发布日期：2026 年 8 月 4 日 · 适用于 Windows x64**
 
-v0.4.2 改进即梦账号录入和检测：支持直接粘贴 `sessionid`、`sessionid_ss`、`sessionid=...` 或完整 Cookie；旧检测接口无法确认账号时会再用积分接口验证，不再把网络、风控或上游接口变化一律误报成“账号已失效”。
+v0.5.0 新增 Agnes 视频中转：客户端仍调用 ModuGate 的 OpenAI 兼容接口，软件会向 Agnes 提交视频任务、持续轮询状态，并在完成后一次性返回最终视频地址。
+
+- **Agnes 正式 API**：在界面填写 Agnes API Key，使用 `agnes-video-v2.0` 进行文生视频。
+- **自动任务轮询**：兼容 `video_id` / `task_id`，优先查询 `/agnesapi`，并兼容旧版任务查询路径。
+- **统一视频接口**：电脑和手机都可调用 `/v1/videos/generations`，无需在客户端实现 Agnes 轮询逻辑。
+- **安全存储**：Agnes API Key 使用 Windows `safeStorage` 加密，不会写入 API 示例或上传到 GitHub。
+- **参数适配**：自动把时长、画面比例和清晰度转换成 Agnes 所需的帧数和尺寸。
+- **清晰错误信息**：提交失败、查询失败、余额/审核错误、超时和取消都会显示可操作的中文提示。
 
 - **视频接口测试**：支持 `/v1/videos/generations` 与 `/v1/chat/completions` 两种方式。
 - **即梦模型预设**：内置 Seedance 2.0 Fast / Pro、1.5 Pro、即梦 3.0 等常用模型名称。
@@ -30,7 +37,7 @@ v0.4.2 改进即梦账号录入和检测：支持直接粘贴 `sessionid`、`ses
 - **支持后台运行**：最小化或关闭主窗口后，本地网关可以继续在系统托盘中运行，并可随时恢复窗口或完全退出。
 - **一体化安装**：安装包继续内置轻量 CLIProxyAPI、完整 Sub2API、PostgreSQL 和 Redis 运行环境，普通用户无需另行配置 Docker 或 WSL。
 
-完整变更与安装注意事项见 [v0.4.2 发布说明](RELEASE_NOTES.md)。
+完整变更与安装注意事项见 [v0.5.0 发布说明](RELEASE_NOTES.md)。
 
 ## 主要功能
 
@@ -38,7 +45,7 @@ v0.4.2 改进即梦账号录入和检测：支持直接粘贴 `sessionid`、`ses
 - **可视化账号授权**：支持 ChatGPT/Codex、Claude、Google/Gemini、Kimi 和 Grok 授权接入。
 - **三种兼容协议**：支持 OpenAI Chat Completions、OpenAI Responses 和 Anthropic Messages。
 - **图片工坊**：支持 OpenAI 兼容的图片生成与编辑接口，可预览、下载、复制 API 示例，并在本机保留最近 24 条历史。
-- **视频工坊**：支持视频生成和即梦兼容接口测试，可配置模型、比例、清晰度、时长、首尾帧或全能参考素材，并预览返回的视频。
+- **视频工坊**：支持 Agnes 自动任务中转、OpenAI 兼容视频生成和即梦接口测试，可配置模型、比例、清晰度与时长，并预览最终视频。
 - **统一 API 路由**：同一个本地 Base URL 可同时供 Codex、Claude、图片和即梦视频工具调用，内部上游地址与账号相互隔离。
 - **内置协议测试台**：直接测试模型连接、流式响应、延迟和可用模型。
 - **真实客户端测试**：检测并调用本机已经安装的 Hermes、Codex 和 Claude Code。
@@ -52,18 +59,18 @@ v0.4.2 改进即梦账号录入和检测：支持直接粘贴 `sessionid`、`ses
 
 ## 下载
 
-当前只发布最新版：**v0.4.2 · Windows x64**
+当前只发布最新版：**v0.5.0 · Windows x64**
 
 前往 [Releases](https://github.com/Laity1m/modugate-desktop/releases/latest) 下载：
 
 ```text
-ModuGate-Setup-0.4.2-x64.exe
+ModuGate-Setup-0.5.0-x64.exe
 ```
 
 安装包暂未购买商业代码签名证书，Windows 首次运行时可能显示安全提醒。请从本仓库 Release 下载，并核对 Release 页面公布的 SHA-256。
 
 ```text
-9AB0980840EE7D62A6482647F0843647AE95BCC27575C4424A5D7DABA7570B33
+250D145E9116906BFDF562AA8B996CC190FA59022ED19454BE6CCE8584F25E2E
 ```
 
 ## 快速开始
@@ -74,9 +81,10 @@ ModuGate-Setup-0.4.2-x64.exe
 4. 回到“网关连接”，点击“保存并检测”。
 5. 文本模型可在“协议测试”中运行 Hermes、Codex 或 Claude Code 预设。
 6. 图片模型可在“图片工坊”中生成或编辑图片；所连接的上游账号/服务需要支持 `/v1/images/generations` 或 `/v1/images/edits`。
-7. 在“网关连接 → 即梦账号与统一 API”中点击“添加账号”，粘贴自己账号 Cookie 中的 `sessionid`；网页没有该项时可尝试 `sessionid_ss`，也可以粘贴完整 Cookie 让软件自动提取。
-8. 视频模型可在“视频工坊”中测试；需要多模态参考时切换到“全能参考”，添加图片、视频或音频，再点击素材旁的“插入 @引用”。
-9. 其他 AI 工具统一填写软件显示的 `http://127.0.0.1:8787/v1` 和“统一 API Key”；ModuGate 会根据模型名称自动分流。
+7. 使用 Agnes 时，在“网关连接 → Agnes 视频中转”填写从 Agnes 平台取得的 API Key，点击“应用 Agnes 预设”并保存。
+8. 进入“视频工坊”，选择 Agnes，输入提示词并开始生成；ModuGate 会自动轮询直至返回最终视频。
+9. 使用即梦时，可在“即梦账号与统一 API”添加自己的 `sessionid`，并按需使用首尾帧或全能参考。
+10. 其他 AI 工具统一填写软件显示的 `http://127.0.0.1:8787/v1` 和“统一 API Key”；`agnes-*` 模型会自动转给 Agnes。
 
 全能参考会把所选本地素材直接发送给当前配置的上游接口。ModuGate 支持图片最多 9 张、视频最多 3 个、音频最多 3 个，单文件上限分别为 25 MB、100 MB 和 50 MB；不同网关实际支持的格式和数量可能更少。目前部分即梦兼容网关只实现图片和视频参考，音频是否生效必须以上游接口能力为准。
 
@@ -121,6 +129,8 @@ ModuGate 是第三方开源工具，不是 OpenAI、Anthropic、Google 或其他
 配置与账号授权数据保存在当前 Windows 用户的应用数据目录中，不会随着安装包复制到另一台电脑。请不要提交账号凭据、API Key、授权文件或运行数据到 GitHub。
 
 图片工坊的生成结果和缩略图也只保存在当前 Windows 用户的本地应用数据目录中；可以在图片工坊里一键清空历史。视频工坊不会复制参考素材到历史目录，但测试时会把用户选择的素材发送给当前配置的上游接口。
+
+Agnes 接入使用用户自行申请的官方 API Key，并遵守 Agnes 的额度、计费、内容审核与服务条款。v0.5.0 的 Agnes 中转先支持文生视频；参考素材请继续使用明确支持对应格式的其他上游。
 
 ## 开源许可
 
