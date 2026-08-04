@@ -1056,6 +1056,10 @@ async function saveJimengAccount() {
   const name = $('#jimeng-account-name').value.trim() || `即梦账号 ${state.jimengAccounts.length + 1}`;
   let region = $('#jimeng-account-region').value;
   let sessionId = $('#jimeng-sessionid').value.trim().replace(/^Bearer\s+/i, '');
+  const cookieSession = sessionId.match(/(?:^|[;\s])sessionid=([^;\s]+)/i);
+  const secureCookieSession = sessionId.match(/(?:^|[;\s])sessionid_ss=([^;\s]+)/i);
+  if (cookieSession || secureCookieSession) sessionId = (cookieSession || secureCookieSession)[1];
+  sessionId = sessionId.trim().replace(/^["']|["']$/g, '');
   const detected = sessionId.match(/^(us|hk|jp|sg)-(.+)$/i);
   if (detected) {
     region = detected[1].toLowerCase();
@@ -1114,8 +1118,8 @@ async function checkJimengAccount(id) {
     const total = result.points?.totalCredit ?? result.points?.total_credit;
     state.jimengAccountStatus[id] = result.live
       ? { text: total == null ? `有效 · ${result.latencyMs} ms` : `有效 · ${total} 积分`, className: 'online' }
-      : { text: '账号已失效', className: 'offline' };
-    toast(result.live ? '即梦账号有效' : '即梦账号已失效，请重新获取 sessionid', result.live ? 'success' : 'error');
+      : { text: '暂时无法验证', className: 'neutral' };
+    toast(result.live ? '即梦账号有效' : (result.reason || '即梦接口暂时无法验证账号，不一定是凭证失效'), result.live ? 'success' : 'error');
   } catch (error) {
     state.jimengAccountStatus[id] = { text: '检测失败', className: 'offline' };
     toast(cleanIpcError(error), 'error');

@@ -8,18 +8,31 @@ const JIMENG_REGIONS = Object.freeze({
   sg: { label: '新加坡站', prefix: 'sg-' }
 });
 
+function parseJimengSessionInput(value) {
+  let raw = String(value || '').trim().replace(/^Bearer\s+/i, '').trim();
+  raw = raw.replace(/^["']|["']$/g, '');
+
+  const session = raw.match(/(?:^|[;\s])sessionid=([^;\s]+)/i);
+  const secureSession = raw.match(/(?:^|[;\s])sessionid_ss=([^;\s]+)/i);
+  if (session || secureSession) raw = (session || secureSession)[1];
+  raw = raw.trim().replace(/^["']|["']$/g, '');
+
+  let region = null;
+  const detected = raw.match(/^(us|hk|jp|sg)-(.+)$/i);
+  if (detected) {
+    region = detected[1].toLowerCase();
+    raw = detected[2];
+  }
+  return { region, sessionId: raw };
+}
+
 function normalizeJimengAccount(input = {}) {
   const id = String(input.id || '').trim();
   const name = String(input.name || '即梦账号').trim().slice(0, 80) || '即梦账号';
   let region = Object.hasOwn(JIMENG_REGIONS, input.region) ? input.region : 'cn';
-  let sessionId = String(input.sessionId || '')
-    .trim()
-    .replace(/^Bearer\s+/i, '');
-  const detected = sessionId.match(/^(us|hk|jp|sg)-(.+)$/i);
-  if (detected) {
-    region = detected[1].toLowerCase();
-    sessionId = detected[2];
-  }
+  const parsed = parseJimengSessionInput(input.sessionId);
+  let sessionId = parsed.sessionId;
+  if (parsed.region) region = parsed.region;
   if (!id || !/^[a-zA-Z0-9_-]{8,100}$/.test(id)) throw new Error('即梦账号 ID 无效');
   if (sessionId.length < 8 || sessionId.length > 4096 || /[\s,]/.test(sessionId)) {
     throw new Error('即梦 sessionid 格式不正确，请只粘贴单个账号的 sessionid');
@@ -66,8 +79,10 @@ async function checkJimengAccount(gatewayUrl, account, options = {}) {
     throw new Error(`即梦账号检测失败（HTTP ${response.status}）：${body?.message || '未知错误'}`);
   }
 
+  let live = body?.live === true;
   let points = null;
-  if (body?.live === true) {
+  let reason = '';
+  if (live || body?.live === false) {
     try {
       const pointsResponse = await fetchWithTimeout(`${root}/token/points`, {
         method: 'POST',
@@ -76,14 +91,27 @@ async function checkJimengAccount(gatewayUrl, account, options = {}) {
       }, options.timeoutMs || 20_000);
       const pointsBody = await parseJson(pointsResponse);
       const first = Array.isArray(pointsBody) ? pointsBody[0] : pointsBody;
-      points = first?.points || first?.credits || null;
-    } catch {
+      const apiCode = Number(first?.code);
+      const pointsValidated = pointsResponse.ok
+        && first
+        && (!Number.isFinite(apiCode) || apiCode === 0)
+        && (Array.isArray(pointsBody) ? pointsBody.length > 0 : true);
+      if (pointsValidated) {
+        points = first?.points || first?.credits || first?.data?.points || null;
+        live = true;
+      } else if (!live) {
+        reason = first?.message || `积分接口返回 HTTP ${pointsResponse.status}`;
+      }
+    } catch (error) {
       points = null;
+      if (!live) reason = error?.message || '即梦接口暂时无法验证账号';
     }
   }
 
   return {
-    live: body?.live === true,
+    live,
+    status: live ? 'valid' : 'unverified',
+    reason: live ? '' : (reason || '即梦检测接口未能确认账号；这不一定表示 sessionid 已失效'),
     latencyMs: Date.now() - startedAt,
     points,
     masked: maskJimengAccount(normalized)
@@ -92,6 +120,7 @@ async function checkJimengAccount(gatewayUrl, account, options = {}) {
 
 module.exports = {
   JIMENG_REGIONS,
+  parseJimengSessionInput,
   normalizeJimengAccount,
   jimengCredential,
   maskJimengAccount,

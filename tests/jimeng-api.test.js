@@ -16,6 +16,24 @@ test('Jimeng accounts normalize region prefixes and mask session ids', () => {
   assert.equal(maskJimengAccount(account), 'us-••••••••1234');
 });
 
+test('Jimeng accounts accept cookie pairs and sessionid_ss', () => {
+  const fromCookie = normalizeJimengAccount({
+    id: 'account_cookie_1',
+    name: 'Cookie account',
+    region: 'cn',
+    sessionId: 'foo=bar; sessionid=real-session-value; sessionid_ss=secondary-value'
+  });
+  assert.equal(fromCookie.sessionId, 'real-session-value');
+
+  const fromSecureCookie = normalizeJimengAccount({
+    id: 'account_cookie_2',
+    name: 'Secure cookie account',
+    region: 'cn',
+    sessionId: 'sessionid_ss=secure-session-value; other=value'
+  });
+  assert.equal(fromSecureCookie.sessionId, 'secure-session-value');
+});
+
 test('Jimeng account check uses the dedicated token endpoints without returning the token', async (t) => {
   const requests = [];
   const server = http.createServer((request, response) => {
@@ -39,4 +57,21 @@ test('Jimeng account check uses the dedicated token endpoints without returning 
   assert.equal(JSON.stringify(result).includes('session-secret'), false);
   assert.equal(JSON.parse(requests[0].body).token, 'session-secret-1234');
   assert.equal(requests[1].authorization, 'Bearer session-secret-1234');
+});
+
+test('Jimeng account check falls back to credits when the legacy live check is inconclusive', async (t) => {
+  const server = http.createServer((request, response) => {
+    response.setHeader('content-type', 'application/json');
+    if (request.url === '/token/check') response.end(JSON.stringify({ live: false }));
+    else response.end(JSON.stringify([{ points: { totalCredit: 12 } }]));
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const address = server.address();
+  const result = await checkJimengAccount(`http://127.0.0.1:${address.port}`, {
+    id: 'account_12345678', name: 'Fallback account', region: 'cn', sessionId: 'session-secret-1234'
+  });
+  assert.equal(result.live, true);
+  assert.equal(result.status, 'valid');
+  assert.equal(result.points.totalCredit, 12);
 });

@@ -150,7 +150,7 @@
               <div class="form-grid">
                 <label class="field"><span>账号名称</span><input id="jimeng-account-name" maxlength="80" placeholder="例如：我的即梦会员"></label>
                 <label class="field"><span>站点地区</span><select id="jimeng-account-region"><option value="cn">中国站</option><option value="us">美国站</option><option value="hk">香港站</option><option value="jp">日本站</option><option value="sg">新加坡站</option></select></label>
-                <label class="field field-wide"><span>sessionid</span><div class="input-wrap"><input id="jimeng-sessionid" type="password" autocomplete="off" placeholder="粘贴即梦网页 Cookie 中的 sessionid"><button type="button" class="input-action" id="toggle-jimeng-sessionid">显示</button></div><small>只填写 sessionid 的值，不要填写完整 Cookie。海外站前缀可由地区选项自动添加。</small></label>
+                <label class="field field-wide"><span>sessionid / sessionid_ss</span><div class="input-wrap"><input id="jimeng-sessionid" type="password" autocomplete="off" placeholder="可粘贴值、sessionid=... 或完整 Cookie"><button type="button" class="input-action" id="toggle-jimeng-sessionid">显示</button></div><small>优先使用 sessionid；网页没有时可使用 sessionid_ss。也支持直接粘贴完整 Cookie，并只在本机加密保存提取出的值。</small></label>
               </div>
               <div class="form-actions"><button class="button button-ghost" id="cancel-jimeng-account">取消</button><button class="button button-primary" id="save-jimeng-account">保存并检测</button></div>
             </div>

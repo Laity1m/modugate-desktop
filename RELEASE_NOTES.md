@@ -1,11 +1,16 @@
-# ModuGate v0.4.1
+# ModuGate v0.4.2
 
 **发布日期：2026 年 8 月 4 日 · Windows x64**
 
-ModuGate v0.4.1 修复 v0.4.0 一体化安装包中 pnpm 依赖链接被错误复制的问题。该问题会导致内置即梦兼容服务启动时提示缺少 `proxy-from-env`、`follow-redirects` 等模块。修正版改用标准无链接生产依赖，并在构建前自动验证 Axios、fs-extra 和 Koa 的依赖完整性。
+ModuGate v0.4.2 修复即梦账号刚保存就被错误显示为“账号已失效”的问题。账号输入现在可以自动提取 `sessionid`、`sessionid_ss`、`sessionid=...` 和完整 Cookie；检测时会使用积分接口进行二次验证，并区分“有效”与“暂时无法验证”。
 
 ## 新功能
 
+- 支持粘贴单独的 `sessionid`、`sessionid_ss`、带名称的 Cookie 项或完整 Cookie；
+- 优先提取 `sessionid`，缺失时自动使用 `sessionid_ss`，保存时仍只加密存储提取出的单个值；
+- `/token/check` 无法确认时自动调用 `/token/points` 二次验证，避免把接口变化或临时网络问题误判为账号失效；
+- 检测失败时显示上游返回的安全错误摘要，不会回传或显示 sessionid；
+- 保留 v0.4.1 的无链接即梦生产依赖和构建前完整性预检；
 - 新增“视频工坊”，可直接测试 `/v1/videos/generations`；
 - 支持部分即梦网关使用的 `/v1/chat/completions` 视频兼容方式；
 - 内置 Seedance 2.0 Fast、2.0 Pro、1.5 Pro 和即梦 3.0 等模型预设；
@@ -34,13 +39,13 @@ ModuGate v0.4.1 修复 v0.4.0 一体化安装包中 pnpm 依赖链接被错误�
 ## 下载文件
 
 ```text
-ModuGate-Setup-0.4.1-x64.exe
+ModuGate-Setup-0.4.2-x64.exe
 ```
 
 SHA-256：
 
 ```text
-FA468335B7F7760D06BDCE301204444EA10C9FE8722682AAE251D834EE871533
+9AB0980840EE7D62A6482647F0843647AE95BCC27575C4424A5D7DABA7570B33
 ```
 
 安装包未购买商业代码签名证书，Windows 首次运行时可能显示安全提醒。请仅从本仓库 Release 页面下载，并核对发布页公布的 SHA-256。
