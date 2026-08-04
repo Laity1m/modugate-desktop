@@ -192,6 +192,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .client-logo.codex { color: var(--cyan); background: rgba(68,215,200,.08); }
 .client-logo.claude { color: var(--orange); background: rgba(242,166,90,.08); }
 .client-logo.image { color: #ff7dc8; background: rgba(255,125,200,.08); }
+.client-logo.video { color: #b497ff; background: rgba(180,151,255,.08); }
 .client-logo.large { width: 42px; height: 42px; border-radius: 11px; font-size: 15px; }
 
 .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -201,6 +202,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .stack { display: grid; align-content: start; gap: 14px; }
 .compact-panel { padding: 21px; }
 .compact-panel .button { margin-top: 17px; }
+.compact-actions { display: grid; gap: 8px; margin-top: 17px; }.compact-actions .button { margin-top: 0; }
 .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 17px; margin-top: 24px; }
 .field { display: grid; align-content: start; gap: 7px; }
 .field.grow { grid-template-rows: auto 1fr; }
@@ -237,6 +239,30 @@ textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
 .diagnostic-card dl > div:last-child { border: 0; }
 .diagnostic-card dt { color: var(--muted-2); font-size: 11px; }
 .diagnostic-card dd { margin: 0; font: 11px Consolas, monospace; }
+.jimeng-account-panel { margin-top: 14px; padding: 22px; }
+.jimeng-account-panel code { color: var(--cyan); font: 10px Consolas, monospace; }
+.jimeng-routing-grid { display: grid; grid-template-columns: minmax(460px, 1.15fr) minmax(300px, .85fr); gap: 18px; margin-top: 20px; }
+.jimeng-connection-settings, .jimeng-account-side { display: grid; align-content: start; gap: 13px; }
+.unified-credential-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 12px; padding: 13px; border: 1px solid rgba(68,215,200,.18); border-radius: 9px; background: rgba(68,215,200,.035); }
+.unified-credential-card > div { display: grid; gap: 6px; min-width: 0; }
+.unified-credential-card small { color: var(--muted-2); font-size: 9px; }
+.unified-credential-card code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jimeng-account-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.jimeng-account-actions .button-ghost { grid-column: 1 / -1; }
+.jimeng-account-warning { margin: 0; padding: 11px 12px; border-radius: 8px; background: rgba(242,166,90,.065); color: #c7ad8f; font-size: 10px; line-height: 1.65; }
+.jimeng-account-form { margin-top: 18px; padding: 17px; border: 1px solid var(--line-strong); border-radius: 10px; background: rgba(4,13,24,.5); }
+.jimeng-account-form .form-actions { margin-top: 15px; padding-top: 14px; }
+.jimeng-account-list { display: grid; gap: 8px; margin-top: 18px; }
+.jimeng-empty { margin: 0; padding: 20px; border: 1px dashed var(--line-strong); border-radius: 9px; color: var(--muted-2); font-size: 10px; text-align: center; }
+.jimeng-account-item { display: grid; grid-template-columns: 31px minmax(0, 1fr) auto auto; align-items: center; gap: 11px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: rgba(4,13,24,.48); }
+.jimeng-account-item.selected { border-color: rgba(68,215,200,.35); background: rgba(68,215,200,.04); }
+.jimeng-account-icon { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 8px; background: rgba(170,140,255,.1); color: var(--purple); font: 700 11px Consolas, monospace; }
+.jimeng-account-info { display: grid; gap: 4px; min-width: 0; }
+.jimeng-account-info strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.jimeng-account-info small { color: var(--muted-2); font: 9px Consolas, monospace; }
+.jimeng-account-test-state { min-width: 90px; color: var(--muted-2); font-size: 9px; text-align: right; }
+.jimeng-account-test-state.online { color: var(--success); }.jimeng-account-test-state.offline { color: var(--danger); }
+.jimeng-account-item-actions { display: flex; gap: 6px; }.jimeng-account-item-actions .button { padding: 7px 9px; font-size: 9px; }
 
 .playground-shell { display: grid; grid-template-columns: minmax(360px, .86fr) minmax(480px, 1.35fr); gap: 14px; min-height: calc(100vh - 145px); }
 .composer-panel, .response-panel { overflow: hidden; }
@@ -386,6 +412,9 @@ textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
 .reference-item span { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid rgba(68,215,200,.24); border-radius: 6px; color: var(--cyan); font: 8px Consolas, monospace; }
 .reference-item strong { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .reference-item button { border: 0; background: transparent; color: var(--muted-2); font-size: 9px; cursor: pointer; }.reference-item button:hover { color: var(--danger); }
+.reference-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }.reference-actions code { padding: 4px 6px; border-radius: 5px; background: rgba(68,215,200,.07); color: var(--cyan); font: 8px Consolas, monospace; }.reference-actions .insert-reference:hover { color: var(--cyan); }
+.media-reference-item.video > span { border-color: rgba(180,151,255,.3); color: #b497ff; }.media-reference-item.audio > span { border-color: rgba(255,181,92,.32); color: var(--orange); }
+.omni-reference-hint { margin: 0; padding: 9px 10px; border-radius: 7px; background: rgba(180,151,255,.06); color: #aeb9d4; font-size: 9px; line-height: 1.6; }
 .image-error { margin: 0; padding: 10px 12px; border: 1px solid rgba(255,113,134,.2); border-radius: 7px; background: rgba(255,113,134,.07); color: var(--danger); font-size: 10px; line-height: 1.55; }
 .image-results-panel { display: grid; grid-template-rows: 47px minmax(400px, 1fr) auto; min-width: 0; overflow: hidden; background: #07111e; }
 .image-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); align-content: start; gap: 13px; min-width: 0; padding: 15px; overflow: auto; }
@@ -410,6 +439,16 @@ textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
 .history-image-card .generated-image-preview:hover img { transform: scale(1.025); }.history-image-card img { object-fit: cover; transition: .2s ease; }
 .history-image-card .generated-image-detail { padding: 10px; }.history-image-card .generated-image-detail strong { font-size: 9px; }.history-image-card .generated-image-detail small { font-size: 7px; }
 
+.video-workshop-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 21px; border-bottom: 1px solid var(--line); background: rgba(4,13,24,.28); }
+.video-workshop-head h3 { margin: 4px 0 5px; font-size: 15px; }.video-workshop-head p:last-child { margin: 0; color: var(--muted-2); font-size: 9px; }
+.video-results-panel { grid-template-rows: 47px minmax(430px, 1fr) auto; }
+.video-result-body { display: grid; align-content: start; justify-items: stretch; gap: 14px; min-width: 0; overflow: auto; padding: 16px; }
+.video-result-body > .image-empty-state { place-self: center; align-self: center; min-height: 360px; }
+.video-result-body video { width: 100%; max-height: 520px; border: 1px solid var(--line); border-radius: 11px; background: #030912; }
+.video-result-detail { display: grid; grid-template-columns: minmax(120px, .55fr) minmax(180px, 1fr) auto; align-items: center; gap: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 9px; background: rgba(13,24,39,.8); }
+.video-result-detail > div { display: grid; gap: 5px; min-width: 0; }.video-result-detail small { color: var(--muted-2); font-size: 8px; }.video-result-detail strong { color: var(--success); font-size: 11px; }.video-result-detail code { overflow: hidden; color: #cce1ef; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.video-raw { width: 100%; border: 1px solid var(--line); border-radius: 9px; background: rgba(4,13,24,.55); }.video-raw summary { padding: 11px 13px; color: var(--muted); font-size: 9px; cursor: pointer; }.video-raw pre { max-height: 260px; overflow: auto; margin: 0; padding: 0 13px 13px; color: #9fb5c7; font: 9px/1.6 "Cascadia Code", Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+
 .toast-stack { position: fixed; right: 22px; bottom: 20px; z-index: 20; display: grid; gap: 8px; pointer-events: none; }
 .toast { min-width: 270px; max-width: 390px; padding: 12px 14px; border: 1px solid var(--line-strong); border-left: 3px solid var(--cyan); border-radius: 8px; background: rgba(11,25,41,.97); box-shadow: 0 14px 36px rgba(0,0,0,.34); color: #dce9f5; font-size: 11px; line-height: 1.5; animation: toast-in .2s ease; }
 .toast.error { border-left-color: var(--danger); }.toast.success { border-left-color: var(--success); }
@@ -424,8 +463,10 @@ textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
   .playground-shell, .service-layout, .image-studio-layout { grid-template-columns: 1fr; min-height: 0; }
   .response-panel { min-height: 480px; }
   .image-results-panel { min-height: 540px; }
+  .video-result-detail { grid-template-columns: 1fr; }
   .image-history-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .service-log { min-height: 350px; max-height: 440px; }
+  .jimeng-routing-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 900px) {
@@ -447,6 +488,8 @@ textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
   .runner-output { border-top: 1px solid var(--line); border-left: 0; }
   .boundary-panel { gap: 18px; }
   .image-history-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .jimeng-account-item { grid-template-columns: 31px minmax(0, 1fr); }
+  .jimeng-account-test-state, .jimeng-account-item-actions { grid-column: 2; justify-self: start; text-align: left; }
 }
 
 @media (max-height: 720px) {

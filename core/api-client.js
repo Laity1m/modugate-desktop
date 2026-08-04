@@ -2,13 +2,13 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 
 function normalizeGatewayUrl(value) {
   const input = String(value || '').trim();
-  if (!input) throw new Error('请先填写 Sub2API 地址');
+  if (!input) throw new Error('请先填写网关地址');
 
   let url;
   try {
     url = new URL(input.includes('://') ? input : `http://${input}`);
   } catch {
-    throw new Error('Sub2API 地址格式不正确');
+    throw new Error('网关地址格式不正确');
   }
 
   if (!['http:', 'https:'].includes(url.protocol)) {

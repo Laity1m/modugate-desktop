@@ -19,6 +19,10 @@ const { ProcessManager } = require('./core/process-manager');
 const { IntegratedRuntime } = require('./core/integrated-runtime');
 const { CliProxyRuntime } = require('./core/cliproxy-runtime');
 const { generateImages } = require('./core/image-api');
+const { generateVideo, safeHttpUrl } = require('./core/video-api');
+const { checkJimengAccount, jimengCredential } = require('./core/jimeng-api');
+const { JimengRuntime } = require('./core/jimeng-runtime');
+const { UnifiedGateway } = require('./core/unified-gateway');
 const { ImageHistoryStore, MIME_EXTENSION } = require('./core/image-history');
 const { isPrivateIPv4 } = require('./core/network-access');
 const QRCode = require('qrcode');
@@ -30,11 +34,14 @@ let processManager;
 let integratedRuntime;
 let cliProxyRuntime;
 let imageHistoryStore;
+let jimengRuntime;
+let unifiedGateway;
 let allowQuit = false;
 let shuttingDown = false;
 let backgroundNoticeShown = false;
 const apiControllers = new Map();
 const imageControllers = new Map();
+const videoControllers = new Map();
 const TRAY_ICON_PNG = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAARiSURBVFhH1VdZSFRRGJ63GW2bCFHnQpO26NwJbdFQU0mdyiwxKc2ybLOyKVPbhR4MLYOWh/aNCqmMHrQipiLENrIsCfHBbH0ookIIKkgiOPEd+28z59y5jS0P/fAxw5lz/+/f/zsm0/8oZR9eWicfP+JOP7ivnBBTUlEg3vurMqPhTPLsZk/Tkq62z2s+vWZ6WPayg02rr3s7fsOmo+bQqGGijt+S/BvX4wtbb3WKRHlNHh8sftzmY0zBnessZmXpxWC7GibqDFjmtjSdIoWrul8w17HDLDK3gFkUVRdhKVPZxNpabiA95zp25Js1JnGBqNtQkOOFHffbfio5zAbHTpQI/WFgdDw3BEZTNMLTMneJPH6FyEvedLGohcUSQaBQXNlaaoraW1j/qLh9IpckFHaQQwEpC83K5QiOiJWIjIBokBE5jeeZ2eYoETk1meVpzKCwk+dDUjNZ0rULzNV5jyPtYTOz5c+XiIyA2oBDXG9R8ddgmzpG5OYyt6X5GS6lH9jLH4S3Kc2XNXJCevttZh2fKhEZYdy6jVoH9Rs57pLIrXmPwqGCg6ciOSGytFwi+RUKW29yI2CMFIW8Js89b+8B+5JlEjEhp+0mi1ldzvpFjpGI/MG53M0NwNywKOohHwOWvmjvwY9Ds2ZpDwwYncjDLZIDS7ufc2XIbeqe3SxkQroPmV7RwlhqTevY5HcaOaYdDlGtotURK9wSuXPHdu49+puKFsi9coE5y9YaFi3u4C6ioaUBi8UrNBJCXNlsVGUlR3hOvs9vaNXMupPcs9KPr1jWk4eSwd5Fi2iBK65yC7PYonsX2PT603txCEUieaBAvyce3C+RE6hoQUy1FqREl3MDMutOnP1TA4Dh7tUSMWHEuvX8DrUjxrtZcVRxA1J37qzFISaVqDRQoAgLHtxikx/fl8gBFCTuYUeAC58WRd3MDUiqqSnGIYpKVBwIvGf+zAc3JHJ1W7V2d/q50/weithsUxdxA4bNm2en9ujL1gOwnmnMIoJoNaOipVUNo4OU6IQfjWgyZTec5286yJFIIoJ6fLS7VOtr5FS8JwLG4i5vd5v6xWS3WzQDEqurPfgR49LfdBMX09SuVrbo/VOWULVVuqsHRAgcaEWLojZq5JDQlCkTKI+8R4WH/S2mjI67AS0mhBy6adcEhTtm+hgAia1Yz/cBciqO1j9ZTIgoLaLeXeN4JHJzwWjENNRLhdFioh73Bwo9IoyBpes9SUh8WhWlAm1JXWG0mKjHRcABajuEHi8m0hbUk8jZhVepXfA5ck4RV6i3mLx73BvIOYUd5NBhtqktPpXvV+x2S0hCRqP3tkNqoMSox4mYvKaw4wzkg+yxVpHKUAaocTVoMRo0VKDYGRilmGZYq/iO4vL+cwKvcYac87AH5LmOmBXnJKsz4TYMwas1EfgDUoah1NtFjk7DguuLQJFZUevDkqf1wBh4jUgg3PgOaG9TNscVbc7/C0FUsMmwTn3hnNTXUH8Hy2LmgP8qK8YAAAAASUVORK5CYII=';
 
 function sendToMain(channel, payload) {
@@ -140,7 +147,12 @@ function imageDataUrl(buffer, mimeType) {
 
 function registerIpc() {
   ipcMain.handle('settings:get', () => settingsStore.load());
-  ipcMain.handle('settings:save', (_event, value) => settingsStore.save(value));
+  ipcMain.handle('settings:save', async (_event, value) => {
+    const settings = settingsStore.save(value);
+    if (settings.jimeng.accounts.length) await jimengRuntime.ensureForUrl(settings.jimeng.gatewayUrl);
+    else await jimengRuntime.stop();
+    return settings;
+  });
   ipcMain.handle('gateway:test', (_event, override) => {
     const settings = settingsStore.load();
     return testGateway({ ...settings.connection, ...(override || {}) });
@@ -231,6 +243,54 @@ function registerIpc() {
     return { saved: true, filePath: result.filePath };
   });
   ipcMain.handle('image:history:clear', () => imageHistoryStore.clear());
+  ipcMain.handle('video:generate', async (_event, payload) => {
+    const requestId = String(payload?.requestId || '');
+    if (!requestId) throw new Error('视频请求缺少 requestId');
+    const controller = new AbortController();
+    videoControllers.set(requestId, controller);
+    try {
+      const settings = settingsStore.load();
+      let connection = settings.connection;
+      if (payload?.connectionKind === 'jimeng') {
+        const account = settings.jimeng.accounts.find((item) => item.id === settings.jimeng.selectedAccountId);
+        if (!account) throw new Error('请先在“网关连接”中添加并选择一个即梦账号');
+        connection = {
+          baseUrl: settings.jimeng.gatewayUrl,
+          apiKey: jimengCredential(account),
+          defaultModel: settings.videos.model
+        };
+      }
+      return await generateVideo(connection, payload, {
+        signal: controller.signal,
+        timeoutMs: 1_800_000
+      });
+    } finally {
+      videoControllers.delete(requestId);
+    }
+  });
+  ipcMain.handle('video:cancel', (_event, requestId) => {
+    const controller = videoControllers.get(String(requestId || ''));
+    if (!controller) return false;
+    controller.abort();
+    videoControllers.delete(String(requestId));
+    return true;
+  });
+  ipcMain.handle('video:open', (_event, value) => {
+    const url = safeHttpUrl(value);
+    if (!url) throw new Error('视频地址无效');
+    return shell.openExternal(url);
+  });
+  ipcMain.handle('jimeng:account:check', async (_event, accountId) => {
+    const settings = settingsStore.load();
+    const account = settings.jimeng.accounts.find((item) => item.id === String(accountId || ''));
+    if (!account) throw new Error('即梦账号不存在，请重新添加');
+    await jimengRuntime.ensureForUrl(settings.jimeng.gatewayUrl);
+    return checkJimengAccount(settings.jimeng.gatewayUrl, account);
+  });
+  ipcMain.handle('router:status', () => ({
+    ...unifiedGateway.status(),
+    apiKey: settingsStore.load().router.apiKey
+  }));
   ipcMain.handle('clipboard:write-text', (_event, value) => {
     clipboard.writeText(String(value || ''));
     return true;
@@ -291,7 +351,7 @@ function registerIpc() {
   ipcMain.handle('dialog:pick', async (_event, type) => {
     const properties = type === 'directory'
       ? ['openDirectory']
-      : type === 'images'
+      : ['images', 'media'].includes(type)
         ? ['openFile', 'multiSelections']
         : ['openFile'];
     const filters = type === 'compose'
@@ -300,10 +360,19 @@ function registerIpc() {
         ? [{ name: 'Executable', extensions: process.platform === 'win32' ? ['exe', 'cmd', 'bat'] : ['*'] }]
         : type === 'images'
           ? [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+          : type === 'media'
+            ? [
+                { name: '全能参考素材', extensions: ['png', 'jpg', 'jpeg', 'webp', 'mp4', 'mov', 'webm', 'mp3', 'wav', 'm4a', 'aac', 'flac'] },
+                { name: '图片', extensions: ['png', 'jpg', 'jpeg', 'webp'] },
+                { name: '视频', extensions: ['mp4', 'mov', 'webm'] },
+                { name: '音频', extensions: ['mp3', 'wav', 'm4a', 'aac', 'flac'] }
+              ]
           : undefined;
     const result = await dialog.showOpenDialog(mainWindow, { properties, filters });
     if (result.canceled) return null;
-    return type === 'images' ? result.filePaths.slice(0, 4) : result.filePaths[0];
+    if (type === 'images') return result.filePaths.slice(0, 4);
+    if (type === 'media') return result.filePaths.slice(0, 15);
+    return result.filePaths[0];
   });
 
   ipcMain.handle('console:open', async () => {
@@ -342,6 +411,9 @@ function registerIpc() {
     const allowed = [
       'https://github.com/Wei-Shaw/sub2api',
       'https://github.com/router-for-me/CLIProxyAPI',
+      'https://github.com/zhizinan1997/jimeng-free-api-all',
+      'https://github.com/iptag/jimeng-api',
+      'https://jimeng.jianying.com',
       'https://hermes-agent.nousresearch.com',
       'https://docs.anthropic.com',
       'https://developers.openai.com'
@@ -358,10 +430,12 @@ if (!app.requestSingleInstanceLock()) {
 
 app.on('second-instance', showMainWindow);
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   if (allowQuit) return;
   if (process.platform === 'win32') app.setAppUserModelId('com.modugate.desktop');
   settingsStore = new SettingsStore(path.join(app.getPath('userData'), 'settings.json'), safeStorage);
+  let settings = settingsStore.load();
+  if (!settings.router.apiKey) settings = settingsStore.save(settings);
   const runtimeRoot = app.isPackaged
     ? path.join(process.resourcesPath, 'runtime')
     : path.join(__dirname, 'runtime');
@@ -383,11 +457,27 @@ app.whenReady().then(() => {
     integratedRuntime,
     cliProxyRuntime
   );
+  jimengRuntime = new JimengRuntime({
+    runtimeRoot: path.join(runtimeRoot, 'jimeng'),
+    dataRoot: path.join(app.getPath('userData'), 'jimeng'),
+    onLog: (message, level) => processManager?.log(message, level)
+  });
+  unifiedGateway = new UnifiedGateway({
+    getSettings: () => settingsStore.load(),
+    ensureJimeng: async () => {
+      const current = settingsStore.load();
+      await jimengRuntime.ensureForUrl(current.jimeng.gatewayUrl);
+    },
+    onLog: (message, level) => processManager?.log(message, level)
+  });
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
   registerIpc();
   createTray();
   createWindow();
-  const settings = settingsStore.load();
+  await unifiedGateway.start().catch((error) => processManager.log(`统一 API 启动失败：${error.message}`, 'error'));
+  if (settings.jimeng.accounts.length) {
+    jimengRuntime.ensureForUrl(settings.jimeng.gatewayUrl).catch((error) => processManager.log(error.message, 'error'));
+  }
   if (['cliproxy', 'integrated'].includes(settings.service.mode)) {
     processManager.startService(settings.service).catch((error) => processManager.log(error.message, 'error'));
   }
@@ -399,7 +489,11 @@ app.on('before-quit', (event) => {
   event.preventDefault();
   if (shuttingDown) return;
   shuttingDown = true;
-  processManager.dispose().finally(() => {
+  Promise.allSettled([
+    processManager.dispose(),
+    unifiedGateway?.stop(),
+    jimengRuntime?.stop()
+  ]).finally(() => {
     allowQuit = true;
     app.quit();
   });

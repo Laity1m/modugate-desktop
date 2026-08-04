@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; connect-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; media-src 'self' data: blob: http: https:; connect-src 'none'">
   <title>ModuGate</title>
-  <link rel="stylesheet" href="styles.css?v=0.3.1-lan1">
+  <link rel="stylesheet" href="styles.css?v=0.4.0-video1">
 </head>
 <body>
   <div class="app-shell">
@@ -20,6 +20,7 @@
         <button class="nav-item" data-page-target="connection" aria-label="网关连接" title="网关连接"><span class="nav-icon">⌁</span><span>网关连接</span></button>
         <button class="nav-item" data-page-target="playground" aria-label="协议测试" title="协议测试"><span class="nav-icon">▷</span><span>协议测试</span></button>
         <button class="nav-item" data-page-target="images" aria-label="图片工坊" title="图片工坊"><span class="nav-icon">◩</span><span>图片工坊</span></button>
+        <button class="nav-item" data-page-target="videos" aria-label="视频工坊" title="视频工坊"><span class="nav-icon">▻</span><span>视频工坊</span></button>
         <button class="nav-item" data-page-target="clients" aria-label="客户端实验室" title="客户端实验室"><span class="nav-icon">⌘</span><span>客户端实验室</span></button>
         <button class="nav-item" data-page-target="service" aria-label="服务与日志" title="服务与日志"><span class="nav-icon">≋</span><span>服务与日志</span></button>
         <button class="nav-item" data-page-target="security" aria-label="安全说明" title="安全说明"><span class="nav-icon">◇</span><span>安全说明</span></button>
@@ -31,7 +32,7 @@
           <div><small>网关状态</small><strong id="side-status-text">尚未检测</strong></div>
         </div>
         <div class="background-hint">关闭窗口后继续在系统托盘运行</div>
-        <div class="version">DUAL ENGINE · v0.3.1</div>
+        <div class="version">MEDIA GATEWAY · v0.4.0</div>
       </div>
     </aside>
 
@@ -96,6 +97,7 @@
                 <div><span class="client-logo codex">C</span><p><strong>Codex</strong><small>OpenAI Responses</small></p><code>/v1/responses</code></div>
                 <div><span class="client-logo claude">A</span><p><strong>Claude Code</strong><small>Anthropic Messages</small></p><code>/v1/messages</code></div>
                 <div><span class="client-logo image">I</span><p><strong>Image API</strong><small>图片生成与编辑</small></p><code>/v1/images/*</code></div>
+                <div><span class="client-logo video">V</span><p><strong>Video API</strong><small>视频生成与即梦兼容测试</small></p><code>/v1/videos/*</code></div>
               </div>
             </article>
           </div>
@@ -121,8 +123,39 @@
                 <p class="section-kicker">DIAGNOSTICS</p><h3>连接诊断</h3>
                 <dl><div><dt>健康端点</dt><dd id="diag-health">—</dd></div><div><dt>模型端点</dt><dd id="diag-models">—</dd></div><div><dt>响应耗时</dt><dd id="diag-latency">—</dd></div></dl>
               </article>
+              <article class="panel compact-panel jimeng-preset-card">
+                <p class="section-kicker">JIMENG ACCOUNT</p><h3>即梦账号</h3><p>添加自己的 sessionid 后，图片和视频模型会通过统一 API 自动分流，不会覆盖主网关。</p><div class="compact-actions"><button class="button button-primary full" id="open-jimeng-account-form">添加即梦账号</button><button class="button button-secondary full" id="apply-jimeng-preset">应用视频预设</button></div>
+              </article>
             </aside>
           </div>
+
+          <article class="panel jimeng-account-panel" id="jimeng-account-panel">
+            <div class="panel-title-row"><div><p class="section-kicker">JIMENG ROUTING</p><h3>即梦账号与统一 API</h3><p>外部工具只需连接下方统一地址。ModuGate 根据模型名称，把 GPT/Claude 请求发往主网关，把 <code>jimeng-*</code>、<code>seedance-*</code> 模型发往即梦服务。</p></div><span class="status-badge neutral" id="jimeng-runtime-state">未配置</span></div>
+            <div class="jimeng-routing-grid">
+              <div class="jimeng-connection-settings">
+                <label class="field"><span>即梦专用网关</span><div class="input-wrap"><input id="jimeng-gateway-url" type="url" value="http://127.0.0.1:8001"><span class="input-suffix">JIMENG</span></div><small>默认使用安装包内置服务；也可以填写你自己运行的兼容网关。</small></label>
+                <div class="unified-credential-card">
+                  <div><small>供其他软件调用的统一 Base URL</small><code id="unified-api-url">http://127.0.0.1:8787/v1</code></div>
+                  <button class="button button-secondary" id="copy-unified-url">复制地址</button>
+                  <div><small>统一 API Key</small><div class="input-wrap"><input id="unified-api-key" type="password" readonly><button type="button" class="input-action" id="toggle-unified-key">显示</button></div></div>
+                  <button class="button button-secondary" id="copy-unified-key">复制 Key</button>
+                </div>
+              </div>
+              <div class="jimeng-account-side">
+                <div class="jimeng-account-actions"><button class="button button-primary" id="add-jimeng-account">添加账号</button><button class="button button-secondary" data-doc="https://jimeng.jianying.com">打开即梦登录页</button><button class="button button-ghost" data-doc="https://github.com/iptag/jimeng-api">查看获取说明</button></div>
+                <p class="jimeng-account-warning">请只添加你自己的账号。sessionid 相当于登录凭证，会使用 Windows 安全存储加密；不要截图、上传 GitHub 或发送给他人。</p>
+              </div>
+            </div>
+            <div class="jimeng-account-form hidden" id="jimeng-account-form">
+              <div class="form-grid">
+                <label class="field"><span>账号名称</span><input id="jimeng-account-name" maxlength="80" placeholder="例如：我的即梦会员"></label>
+                <label class="field"><span>站点地区</span><select id="jimeng-account-region"><option value="cn">中国站</option><option value="us">美国站</option><option value="hk">香港站</option><option value="jp">日本站</option><option value="sg">新加坡站</option></select></label>
+                <label class="field field-wide"><span>sessionid</span><div class="input-wrap"><input id="jimeng-sessionid" type="password" autocomplete="off" placeholder="粘贴即梦网页 Cookie 中的 sessionid"><button type="button" class="input-action" id="toggle-jimeng-sessionid">显示</button></div><small>只填写 sessionid 的值，不要填写完整 Cookie。海外站前缀可由地区选项自动添加。</small></label>
+              </div>
+              <div class="form-actions"><button class="button button-ghost" id="cancel-jimeng-account">取消</button><button class="button button-primary" id="save-jimeng-account">保存并检测</button></div>
+            </div>
+            <div class="jimeng-account-list" id="jimeng-account-list"><p class="jimeng-empty">还没有即梦账号。点击“添加账号”开始配置。</p></div>
+          </article>
         </section>
 
         <section class="page" data-page="playground">
@@ -192,6 +225,57 @@
           <article class="panel image-history-panel">
             <div class="panel-title-row"><div><p class="section-kicker">LOCAL HISTORY</p><h3>最近生成</h3><p>最多保留 24 张，原图仅保存在当前 Windows 用户的应用数据目录。</p></div><button class="button button-ghost" id="clear-image-history">清空历史</button></div>
             <div class="image-history-grid" id="image-history"><p class="image-history-empty">还没有图片历史记录。</p></div>
+          </article>
+        </section>
+
+        <section class="page" data-page="videos">
+          <div class="image-studio-layout video-studio-layout">
+            <article class="panel image-composer-panel">
+              <div class="video-workshop-head">
+                <div><p class="section-kicker">VIDEO GENERATION</p><h3>视频接口测试</h3><p>兼容标准视频生成接口与部分即梦反代使用的聊天接口。</p></div>
+                <span class="status-badge neutral" id="video-api-state">READY</span>
+              </div>
+              <div class="image-composer-body">
+                <div class="request-meta"><span>POST</span><code id="video-endpoint">/v1/videos/generations</code><b>LONG TASK</b></div>
+                <div class="image-form-grid">
+                  <label class="field field-wide"><span>视频模型</span><input id="video-model" list="video-models-list" value="jimeng-video-seedance-2.0-fast" placeholder="jimeng-video-seedance-2.0-fast"><datalist id="video-models-list"><option value="jimeng-video-seedance-2.0-fast"></option><option value="jimeng-video-seedance-2.0-pro"></option><option value="jimeng-video-seedance-1.5-pro"></option><option value="jimeng-video-3.0-pro"></option><option value="jimeng-video-3.0"></option></datalist></label>
+                  <label class="field field-wide"><span>接口来源</span><select id="video-connection-kind"><option value="jimeng">即梦账号 · 独立连接</option><option value="main">主 AI 网关</option></select><small>即梦连接与 GPT/Claude 主网关彼此独立；统一 API 会在对外调用时自动分流。</small></label>
+                  <label class="field field-wide"><span>接口类型</span><select id="video-protocol"><option value="videos">视频生成 · /v1/videos/generations</option><option value="chat">聊天兼容 · /v1/chat/completions</option></select></label>
+                  <label class="field"><span>画面比例</span><select id="video-ratio"><option value="16:9">16:9 横屏</option><option value="9:16">9:16 竖屏</option><option value="1:1">1:1 方形</option><option value="4:3">4:3</option><option value="3:4">3:4</option><option value="21:9">21:9 超宽</option></select></label>
+                  <label class="field"><span>清晰度</span><select id="video-resolution"><option value="480p">480p</option><option value="720p" selected>720p</option><option value="1080p">1080p</option><option value="auto">自动</option></select></label>
+                  <label class="field"><span>时长（秒）</span><input id="video-duration" type="number" min="4" max="15" step="1" value="5"><small>Seedance 2.0 支持 4–15 秒；其他模型通常为 5/10 秒</small></label>
+                  <label class="field"><span>参考模式</span><select id="video-reference-mode"><option value="first_last_frames">首帧 / 尾帧</option><option value="omni_reference">全能参考 · @引用</option></select></label>
+                </div>
+                <label class="field image-prompt-field"><span>视频提示词</span><textarea id="video-prompt" maxlength="32000" placeholder="描述镜头、主体动作、环境、光线和风格……">电影感航拍镜头穿过雨后的未来城市，霓虹灯倒映在街道上，镜头平稳向前推进，16:9。</textarea><small><span id="video-prompt-count">0</span> / 32000</small></label>
+                <div class="reference-block omni-reference-block" id="video-reference-block">
+                  <div class="reference-heading"><div><strong id="video-reference-title">首帧 / 尾帧（可选）</strong><small id="video-reference-summary">首尾帧最多 2 张图片；切换全能参考后可加入图片、视频和音频</small></div><button class="button button-secondary" id="pick-video-images">添加参考素材</button></div>
+                  <div class="reference-list" id="video-reference-list"><p>尚未选择参考素材</p></div>
+                  <p class="omni-reference-hint hidden" id="omni-reference-hint">点击素材右侧的“插入 @引用”，然后在提示词中描述它的作用。图片最多 9 张、视频 3 个、音频 3 个；素材会发送给当前接口，音频能力取决于上游网关。</p>
+                </div>
+                <p class="image-error hidden" id="video-error" role="alert"></p>
+                <div class="form-actions split image-actions"><button class="button button-ghost" id="copy-video-api">复制 API 示例</button><div><button class="button button-ghost hidden" id="cancel-video">取消</button><button class="button button-primary" id="run-video">开始测试</button></div></div>
+              </div>
+            </article>
+
+            <article class="panel image-results-panel video-results-panel">
+              <div class="response-head"><div><span class="terminal-dot red"></span><span class="terminal-dot amber"></span><span class="terminal-dot green"></span><strong>视频结果</strong></div><div class="response-stats"><span id="video-result-status">READY</span><span id="video-result-latency">— ms</span></div></div>
+              <div class="video-result-body" id="video-result-body">
+                <div class="image-empty-state" id="video-empty-state"><span>▻</span><strong>等待视频请求</strong><p>视频任务通常需要数分钟。测试过程可以取消，但上游任务可能继续运行。</p></div>
+                <video class="hidden" id="video-player" controls playsinline preload="metadata"></video>
+                <div class="video-result-detail hidden" id="video-result-detail">
+                  <div><small>任务状态</small><strong id="video-task-state">—</strong></div>
+                  <div><small>任务 ID</small><code id="video-task-id">—</code></div>
+                  <button class="button button-secondary hidden" id="open-video-url">在浏览器打开视频</button>
+                </div>
+                <details class="video-raw hidden" id="video-raw"><summary>查看原始响应</summary><pre id="video-raw-output"></pre></details>
+              </div>
+              <div class="image-result-footer"><span id="video-result-summary">尚无结果</span><span>本机直连 · 不上传凭证</span></div>
+            </article>
+          </div>
+
+          <article class="panel api-example-panel">
+            <div class="panel-title-row"><div><p class="section-kicker">API EXAMPLE</p><h3>视频接口调用示例</h3><p>密钥通过环境变量读取；即梦 sessionid 不会出现在复制的代码中。</p></div><button class="button button-secondary" id="copy-video-api-secondary">复制代码</button></div>
+            <pre id="video-api-example"></pre>
           </article>
         </section>
 
@@ -292,6 +376,6 @@
     </main>
   </div>
   <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
-  <script src="renderer.js?v=0.3.1-lan1"></script>
+  <script src="renderer.js?v=0.4.0-video1"></script>
 </body>
 </html>

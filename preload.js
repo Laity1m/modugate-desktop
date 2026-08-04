@@ -25,6 +25,17 @@ contextBridge.exposeInMainWorld('studio', {
     save: (id) => ipcRenderer.invoke('image:save', id),
     clearHistory: () => ipcRenderer.invoke('image:history:clear')
   },
+  videos: {
+    generate: (payload) => ipcRenderer.invoke('video:generate', payload),
+    cancel: (requestId) => ipcRenderer.invoke('video:cancel', requestId),
+    open: (url) => ipcRenderer.invoke('video:open', url)
+  },
+  jimeng: {
+    checkAccount: (accountId) => ipcRenderer.invoke('jimeng:account:check', accountId)
+  },
+  router: {
+    status: () => ipcRenderer.invoke('router:status')
+  },
   service: {
     start: () => ipcRenderer.invoke('service:start'),
     stop: () => ipcRenderer.invoke('service:stop'),

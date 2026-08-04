@@ -50,3 +50,15 @@ The installer includes the upstream license and README next to the Sub2API binar
 - Purpose: generates local-network Base URL QR codes entirely on the user's computer
 
 All trademarks belong to their respective owners. These components are provided without warranty under their respective licenses.
+
+## Jimeng API 1.0.0
+
+- Project: https://github.com/iptag/jimeng-api
+- Bundled upstream commit: `b9a4199e5a273415f9dd3155246e9bb39ace4395`
+- License: GNU General Public License v3.0
+- Bundled `dist/index.js` SHA-256: `417CCC78CA753677958E0EE57ECFDCF4F895AB4AA26C6CF88C137DAEEC2BC44C`
+- Purpose: optional local Jimeng-compatible image/video upstream used by ModuGate's unified router
+
+ModuGate distributes this separately executed runtime under GPL-3.0. The exact corresponding source tree, upstream README, license, Node.js license, and commit information are included under `resources/runtime/jimeng`. The service runs as a separate local process and is restricted by ModuGate to `127.0.0.1:8001`.
+
+This reverse-engineered compatibility service is not an official Jimeng or ByteDance product. Its availability and compatibility may change with the website, and users remain responsible for account security, upstream service terms, and local law.

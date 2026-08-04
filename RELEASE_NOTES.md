@@ -1,48 +1,46 @@
-# ModuGate v0.3.1
+# ModuGate v0.4.0
 
-**发布日期：2026 年 8 月 2 日 · Windows x64**
+**发布日期：2026 年 8 月 4 日 · Windows x64**
 
-ModuGate v0.3.1 在现有双引擎、图片工坊、响应式界面和系统托盘后台运行能力上，新增安全可控的手机 / 局域网 API 访问。轻量 OAuth 引擎默认仍只监听本机；用户主动打开开关并重新启动服务后，同一 Wi-Fi 下的手机、平板或另一台电脑可以通过 OpenAI 兼容接口调用模型。
+ModuGate v0.4.0 新增完整的视频接口测试工作流，并针对即梦（Jimeng）兼容网关补充模型、参数和响应解析能力。原有双引擎、图片工坊、协议测试、真实客户端测试、局域网访问与系统托盘功能保持不变。
 
-对于普通用户，下载一个安装包即可获得完整本地运行环境；对于开发者，可以使用 OpenAI Chat Completions、Responses、Images 和 Anthropic Messages 等兼容接口，将 ModuGate 作为本机 AI 工具的统一连接入口。
+## 新功能
 
-## 功能
+- 新增“视频工坊”，可直接测试 `/v1/videos/generations`；
+- 支持部分即梦网关使用的 `/v1/chat/completions` 视频兼容方式；
+- 内置 Seedance 2.0 Fast、2.0 Pro、1.5 Pro 和即梦 3.0 等模型预设；
+- 支持常用比例、480p/720p/1080p 清晰度；Seedance 2.0 可设置 4–15 秒，其他预设通常使用 5 秒或 10 秒；
+- 支持最多两张首帧 / 尾帧图片，通过 multipart 表单测试图生视频；
+- 新增“全能参考”模式，可加入最多 9 张图片、3 个视频和 3 个音频，并生成可插入提示词的 `@image_file_N`、`@video_file_N`、`@audio_file_N` 引用；
+- 删除或调整素材后自动重新编号提示词中的 `@引用`，避免引用错位；
+- 新增即梦账号管理，可添加多个账号、切换当前账号、检测 sessionid 状态与可用积分；
+- 新增本机统一 API `http://127.0.0.1:8787/v1`，外部工具使用一个地址即可同时调用主网关模型和即梦图片/视频模型；
+- 统一路由根据 `model` 自动分流：`jimeng-*`、`seedance-*`、`dreamina-*` 走即梦专用服务，其余请求走主 AI 网关；
+- 一体化安装包新增独立的 Jimeng API 运行环境，并强制仅监听 `127.0.0.1:8001`；对应 GPL-3.0 许可证和完整源码随安装包提供；
+- 支持长任务取消、HTTP 状态、耗时、任务 ID、任务状态和原始响应查看；
+- 自动识别常见 JSON、Markdown 和文本响应中的视频地址，并提供内置播放器与浏览器打开功能；
+- 提供不包含真实密钥的 PowerShell / curl API 示例；
+- 新增视频 API 单元测试和安全 URL 校验。
 
-- 内置轻量 CLIProxyAPI 和完整 Sub2API 双引擎；
-- 支持 ChatGPT/Codex、Claude、Google/Gemini、Kimi 和 Grok 授权入口；
-- 支持 Chat Completions、Responses 和 Anthropic Messages 协议测试；
-- 新增图片工坊，支持 OpenAI 兼容的 `/v1/images/generations` 与 `/v1/images/edits` 接口；
-- 支持文生图、多参考图编辑、取消请求、结果预览与下载、API 示例复制，以及最多 24 条本机历史；
-- 支持检测并调用本机已经安装的 Hermes、Codex 和 Claude Code；
-- 一体化安装 PostgreSQL、Redis 和必要运行组件，无需 Docker 或 WSL；
-- 修复长页面被窗口撑开、无法继续下滑的问题，并增加窄窗口与低高度适配；
-- 增加系统托盘后台模式：最小化或关闭窗口后继续运行本地服务；
-- 新增“允许同一局域网访问”开关，并在切换后自动安全重启轻量引擎；
-- 自动识别真实 Wi-Fi / 以太网地址，过滤常见 TUN、VMware、Docker 等虚拟网卡；
-- 提供手机 Base URL、离线二维码、Base URL 与 API Key 独立复制按钮；
-- 显示局域网监听状态与 Windows 防火墙排查提示；
-- 管理接口继续限制在本机，PostgreSQL 与 Redis 不对局域网开放；
-- API Key 和本地管理凭据使用 Windows 安全存储保护。
+## 安全边界
 
-## 下载
+- ModuGate 不会把即梦会员正式转换为官方 API，也不会绕过积分、内容审核、地区或账号限制。
+- 非官方即梦反代依赖网页接口和 `sessionid`，可能随官网更新失效，也可能触发账号风控。
+- `sessionid` 等网关凭证仅通过 Windows 安全存储保存在本机，不会写入示例代码。
+- 全能参考素材会发送给用户当前配置的上游接口；音频参考并非所有即梦兼容网关都支持，应以上游实现为准。
+- 即梦 sessionid 与统一 API Key 使用 Windows 安全存储加密；统一路由和内置即梦服务默认仅供本机访问，不会直接暴露到公网。
+- 建议只在本机或可信局域网中使用非官方网关；生产业务应优先使用火山方舟等官方 API。
 
-仅提供 Windows x64 一体化安装包：
+## 下载文件
 
 ```text
-ModuGate-Setup-0.3.1-x64.exe
+ModuGate-Setup-0.4.0-x64.exe
 ```
 
 SHA-256：
 
 ```text
-6273D82948D839D890BB8772695CABF12C3C9B6B9DEF4C7AF7CF37BBF0106F39
+538E4203B952C697D7F0BA202F739D810313AB7BB182CE16230F3A6AF76FA186
 ```
 
-## 注意
-
-- 安装包未购买商业代码签名证书，Windows 可能显示安全提醒。
-- Hermes、Codex 和 Claude Code 客户端不包含在安装包中，真实客户端测试需要用户自行安装对应 CLI。
-- ModuGate 不是模型厂商的官方产品。网页订阅不等于官方 API 额度，兼容转接可能受到上游服务条款限制。
-- 图片功能是否可用取决于所连接的模型和上游服务能力；ModuGate 不会绕过上游地区、账号或内容安全限制。
-- 局域网共享只适合可信的家庭或办公专用网络。不要进行路由器端口映射，也不要把 HTTP 接口直接暴露到公网。
-- 二维码只包含 Base URL，不包含 API Key；API Key 应仅提供给你信任的设备。
+安装包未购买商业代码签名证书，Windows 首次运行时可能显示安全提醒。请仅从本仓库 Release 页面下载，并核对发布页公布的 SHA-256。

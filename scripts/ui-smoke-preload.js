@@ -3,6 +3,12 @@ const QRCode = require('qrcode');
 
 const settings = {
   connection: { baseUrl: 'http://127.0.0.1:8317', apiKey: 'sk-local-ui-smoke', defaultModel: 'gpt-5' },
+  jimeng: {
+    gatewayUrl: 'http://127.0.0.1:8001',
+    selectedAccountId: 'account_smoke1234',
+    accounts: [{ id: 'account_smoke1234', name: '我的即梦会员', region: 'cn', sessionId: 'session-secret-smoke1234' }]
+  },
+  router: { enabled: true, port: 8787, apiKey: 'mg-unified-ui-smoke' },
   service: {
     mode: 'cliproxy',
     allowLan: true,
@@ -12,7 +18,8 @@ const settings = {
     binaryArgs: ''
   },
   tools: { hermesPath: 'hermes', codexPath: 'codex', claudePath: 'claude' },
-  images: { model: 'gpt-image-2', size: '1024x1024', quality: 'auto', outputFormat: 'png', background: 'auto' }
+  images: { model: 'gpt-image-2', size: '1024x1024', quality: 'auto', outputFormat: 'png', background: 'auto' },
+  videos: { model: 'jimeng-video-seedance-2.0-fast', connectionKind: 'jimeng', protocol: 'videos', referenceMode: 'first_last_frames', ratio: '16:9', resolution: '720p', duration: 5 }
 };
 
 const subscribe = () => () => {};
@@ -41,6 +48,13 @@ contextBridge.exposeInMainWorld('studio', {
     save: async () => ({ saved: false }),
     clearHistory: async () => ({ cleared: 0 })
   },
+  videos: {
+    generate: async () => ({ status: 200, latencyMs: 12, urls: [], raw: {} }),
+    cancel: async () => true,
+    open: async () => true
+  },
+  jimeng: { checkAccount: async () => ({ live: true, latencyMs: 42, points: { totalCredit: 88 }, masked: '••••1234' }) },
+  router: { status: async () => ({ running: true, root: 'http://127.0.0.1:8787', apiBase: 'http://127.0.0.1:8787/v1', apiKey: 'mg-unified-ui-smoke' }) },
   service: {
     start: async () => ({ started: true, message: 'UI smoke service' }),
     stop: async () => ({ stopped: true }),
