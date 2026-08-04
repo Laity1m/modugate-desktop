@@ -1,8 +1,8 @@
-# ModuGate v0.4.0
+# ModuGate v0.4.1
 
 **发布日期：2026 年 8 月 4 日 · Windows x64**
 
-ModuGate v0.4.0 新增完整的视频接口测试工作流，并针对即梦（Jimeng）兼容网关补充模型、参数和响应解析能力。原有双引擎、图片工坊、协议测试、真实客户端测试、局域网访问与系统托盘功能保持不变。
+ModuGate v0.4.1 修复 v0.4.0 一体化安装包中 pnpm 依赖链接被错误复制的问题。该问题会导致内置即梦兼容服务启动时提示缺少 `proxy-from-env`、`follow-redirects` 等模块。修正版改用标准无链接生产依赖，并在构建前自动验证 Axios、fs-extra 和 Koa 的依赖完整性。
 
 ## 新功能
 
@@ -34,13 +34,13 @@ ModuGate v0.4.0 新增完整的视频接口测试工作流，并针对即梦（J
 ## 下载文件
 
 ```text
-ModuGate-Setup-0.4.0-x64.exe
+ModuGate-Setup-0.4.1-x64.exe
 ```
 
 SHA-256：
 
 ```text
-538E4203B952C697D7F0BA202F739D810313AB7BB182CE16230F3A6AF76FA186
+FA468335B7F7760D06BDCE301204444EA10C9FE8722682AAE251D834EE871533
 ```
 
 安装包未购买商业代码签名证书，Windows 首次运行时可能显示安全提醒。请仅从本仓库 Release 页面下载，并核对发布页公布的 SHA-256。

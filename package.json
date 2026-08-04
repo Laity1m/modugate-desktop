@@ -1,6 +1,6 @@
 {
   "name": "modugate-desktop",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Windows desktop console for local AI gateways, image and video generation testing, and API compatibility",
   "main": "main.js",
   "author": "Laity1m and ModuGate contributors",
@@ -11,9 +11,10 @@
     "test": "node --test \"tests/*.test.js\"",
     "test:lan": "node scripts/lan-smoke.js",
     "test:ui": ".\\node_modules\\electron\\dist\\electron.exe scripts\\ui-smoke.js",
-    "build:dir": "electron-builder --win --dir",
-    "build:win": "electron-builder --win nsis",
-    "build:portable": "electron-builder --win portable"
+    "verify:jimeng-runtime": "node scripts/verify-jimeng-runtime.js",
+    "build:dir": "node scripts/verify-jimeng-runtime.js && electron-builder --win --dir",
+    "build:win": "node scripts/verify-jimeng-runtime.js && electron-builder --win nsis",
+    "build:portable": "node scripts/verify-jimeng-runtime.js && electron-builder --win portable"
   },
   "devDependencies": {
     "electron": "^37.2.3",
