@@ -1,0 +1,29 @@
+﻿<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800'>
+  <defs><linearGradient id='bg' x1='0' x2='1' y1='0' y2='1'><stop offset='0%' stop-color='#0d1b2a'/><stop offset='100%' stop-color='#1b263b'/></linearGradient></defs>
+  <rect width='1200' height='800' fill='url(#bg)'/>
+  <g fill='none' stroke='#6fffe9' stroke-width='6'>
+    <rect x='60' y='80' width='320' height='150' rx='20' fill='rgba(255,255,255,0.08)'/>
+    <rect x='440' y='80' width='700' height='150' rx='20' fill='rgba(255,255,255,0.08)'/>
+    <line x1='380' y1='155' x2='440' y2='155'/>
+  </g>
+  <g fill='white' font-family='Arial' text-anchor='middle'>
+    <text x='220' y='165' font-size='32' fill='#76c893'>本地桌面客户端</text>
+    <text x='790' y='165' font-size='32' fill='#76c893'>统一 OpenAI 风格网关</text>
+  </g>
+  <g fill='none' stroke='#ffb703' stroke-width='5'>
+    <rect x='260' y='300' width='280' height='210' rx='24' fill='rgba(255,183,3,0.15)'/>
+    <rect x='660' y='300' width='280' height='210' rx='24' fill='rgba(86,202,255,0.15)'/>
+    <line x1='540' y1='405' x2='660' y2='405'/>
+    <line x1='540' y1='460' x2='660' y2='460'/>
+  </g>
+  <g fill='white' font-family='Arial' text-anchor='middle'>
+    <text x='400' y='380' font-size='30' fill='#ffb703'>应用层</text>
+    <text x='400' y='425' font-size='24'>Claude / Open WebUI / App</text>
+    <text x='400' y='455' font-size='24'>统一调用 /v1/images /v1/videos</text>
+    <text x='400' y='500' font-size='24'>任务状态与重试控制</text>
+    <text x='800' y='380' font-size='30' fill='#56cfe1'>服务层</text>
+    <text x='800' y='425' font-size='24'>Agnes / 即梦 / Midjourney</text>
+    <text x='800' y='455' font-size='24'>自动适配参数与返回格式</text>
+    <text x='800' y='500' font-size='24'>统一鉴权与错误回填</text>
+  </g>
+</svg>
