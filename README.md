@@ -23,9 +23,9 @@ ModuGate 主要解决的是：
 
 ### Agnes 视频中转
 
-- 新增 Agnes 配置入口与 gnes-video-v2.0 预设
+- 新增 Agnes 配置入口与 agnes-video-v2.0 预设
 - 支持 /v1/videos 任务提交与状态轮询
-- 自动兼容 ideo_id、	ask_id、嵌套地址字段解析
+- 自动兼容 video_id、task_id、嵌套地址字段解析
 - 自动处理时长与分辨率参数，减轻手工适配成本
 
 ### 稳定性增强
@@ -37,7 +37,7 @@ ModuGate 主要解决的是：
 ### 统一能力延续
 
 - 保留图片工坊、即梦视频、全能参考、局域网访问
-- GET /v1/models 在配置 Agnes 后返回 gnes-video-v2.0
+- GET /v1/models 在配置 Agnes 后返回 agnes-video-v2.0
 
 <p align="center">
   <img src="https://github.com/Laity1m/modugate-desktop/releases/download/untagged-8602ec8154235a5eb8f8/modugate-security.svg" width="92%" alt="安全边界" />
@@ -48,7 +48,7 @@ ModuGate 主要解决的是：
 1. 安装 ModuGate-Setup-0.5.0-x64.exe
 2. 在网关连接中配置 Agnes Key，点击“应用预设”
 3. 进入视频工坊提交测试任务，确认结果可回填
-4. 外部客户端配置统一 Base URL 与统一 API Key，模型选 gnes-video-v2.0
+4. 外部客户端配置统一 Base URL 与统一 API Key，模型选 agnes-video-v2.0
 
 ![价值图谱](https://github.com/Laity1m/modugate-desktop/releases/download/untagged-8602ec8154235a5eb8f8/modugate-value.svg)
 
@@ -57,9 +57,9 @@ ModuGate 主要解决的是：
 - 安装文件：ModuGate-Setup-0.5.0-x64.exe
 - SHA-256：
 
-`	ext
+```text
 250D145E9116906BFDF562AA8B996CC190FA59022ED19454BE6CCE8584F25E2E
-`
+```
 
 > 首次运行 Windows 可能出现安全提示（未购买商业代码签名证书）。请核对来源并只从本仓库 Release 页面下载。
 
