@@ -1,0 +1,17 @@
+﻿<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800'>
+  <rect width='1200' height='800' fill='#0f172a'/>
+  <g fill='white' font-family='Arial'>
+    <text x='60' y='100' font-size='44' fill='#fef9ef'>安全边界与部署建议</text>
+  </g>
+  <g>
+    <rect x='60' y='150' width='520' height='240' rx='20' fill='#1e293b' stroke='#84cc16' stroke-width='4'/>
+    <rect x='620' y='150' width='520' height='240' rx='20' fill='#1e293b' stroke='#38bdf8' stroke-width='4'/>
+    <rect x='60' y='430' width='1080' height='240' rx='20' fill='#1e293b' stroke='#f97316' stroke-width='4'/>
+  </g>
+  <g fill='white' font-family='Arial' font-size='24'>
+    <text x='90' y='210'>✅ 只存本机密钥（当前用户）</text><text x='90' y='255' font-size='22'>✅ 使用托盘后台，关闭窗口不中断</text><text x='90' y='300' font-size='22'>✅ 任务状态透明可追踪，可取消/重试</text>
+    <text x='650' y='210' fill='#38bdf8'>⚠️ 仅调用你自己的 Agnes Key</text><text x='650' y='255' fill='#38bdf8' font-size='22'>⚠️ 不上传 Key 到仓库或公开日志</text><text x='650' y='300' fill='#38bdf8' font-size='22'>⚠️ 处理生成失败与超时异常提示</text>
+    <text x='90' y='520' fill='#f97316' font-size='34'>📡 生产力环境建议：内网访问 / API Key 分离</text>
+    <text x='90' y='575' font-size='22'>· 建议启用局域网白名单，避免映射到公网</text><text x='90' y='615' font-size='22'>· 下载前核对 SHA-256，升级前先备份配置</text><text x='90' y='655' font-size='22'>· 视频任务高负载时建议夜间执行，观察日志与重试机制</text>
+  </g>
+</svg>
