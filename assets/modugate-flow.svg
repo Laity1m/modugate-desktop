@@ -1,0 +1,22 @@
+﻿<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800'>
+  <defs><linearGradient id='g2' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#14213d'/><stop offset='100%' stop-color='#0b6e4f'/></linearGradient></defs>
+  <rect width='1200' height='800' fill='url(#g2)'/>
+  <g fill='white' font-family='Arial' text-anchor='middle'>
+    <text x='600' y='90' font-size='40' fill='#fca311'>v0.5.0 使用路径（5 步）</text>
+  </g>
+  <g stroke='#ffd166' stroke-width='6' fill='none'>
+    <circle cx='120' cy='220' r='70'/><circle cx='330' cy='220' r='70'/><circle cx='540' cy='220' r='70'/><circle cx='750' cy='220' r='70'/><circle cx='960' cy='220' r='70'/>
+    <path d='M190 220 H260'/><path d='M400 220 H470'/><path d='M610 220 H680'/><path d='M820 220 H890'/>
+  </g>
+  <g fill='white' font-family='Arial' text-anchor='middle' font-size='24'>
+    <text x='120' y='225' fill='#ffd166'>1. 安装</text><text x='330' y='225' fill='#ffd166'>2. 配置</text><text x='540' y='225' fill='#ffd166'>3. 发起任务</text><text x='750' y='225' fill='#ffd166'>4. 轮询状态</text><text x='960' y='225' fill='#ffd166'>5. 下载产物</text>
+  </g>
+  <g fill='rgba(255,255,255,0.12)' stroke='rgba(255,255,255,0.4)' stroke-width='2'>
+    <rect x='80' y='320' width='260' height='340' rx='20'/><rect x='390' y='320' width='260' height='340' rx='20'/><rect x='700' y='320' width='260' height='340' rx='20'/>
+  </g>
+  <g fill='white' font-family='Arial' font-size='30' text-anchor='middle'>
+    <text x='210' y='370'>桌面与服务\n端口配置</text><text x='210' y='430' font-size='20'>统一 Base URL</text><text x='210' y='460' font-size='20'>API Key 管理</text><text x='210' y='490' font-size='20'>任务日志</text>
+    <text x='520' y='370'>模型路由</text><text x='520' y='430' font-size='20'>图片工坊/视频工坊</text><text x='520' y='460' font-size='20'>请求参数适配</text><text x='520' y='490' font-size='20'>异常自动回退</text>
+    <text x='830' y='370'>结果交付</text><text x='830' y='430' font-size='20'>成功链接回填</text><text x='830' y='460' font-size='20'>本地历史记录</text><text x='830' y='490' font-size='20'>外部读取</text>
+  </g>
+</svg>
