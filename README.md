@@ -1,7 +1,7 @@
 # ModuGate（模渡）
 
 <p align="center">
-  <img src="https://github.com/Laity1m/modugate-desktop/releases/download/untagged-8602ec8154235a5eb8f8/modugate-overview.svg" width="92%" alt="ModuGate 功能总览" />
+  <img src="./assets/modugate-overview.svg" width="92%" alt="ModuGate 功能总览" />
 </p>
 
 > 一台 Windows 桌面网关，把多家模型服务统一为一套 OpenAI 兼容接口。
@@ -16,7 +16,7 @@ ModuGate 主要解决的是：
 - **工作流友好**：支持图片、视频等常见场景的网关转接
 
 <p align="center">
-  <img src="https://github.com/Laity1m/modugate-desktop/releases/download/untagged-8602ec8154235a5eb8f8/modugate-flow.svg" width="92%" alt="ModuGate 使用流程" />
+  <img src="./assets/modugate-flow.svg" width="92%" alt="ModuGate 使用流程" />
 </p>
 
 ## v0.5.0 核心更新
@@ -40,7 +40,7 @@ ModuGate 主要解决的是：
 - GET /v1/models 在配置 Agnes 后返回 agnes-video-v2.0
 
 <p align="center">
-  <img src="https://github.com/Laity1m/modugate-desktop/releases/download/untagged-8602ec8154235a5eb8f8/modugate-security.svg" width="92%" alt="安全边界" />
+  <img src="./assets/modugate-security.svg" width="92%" alt="安全边界" />
 </p>
 
 ## 3 分钟快速上手
@@ -50,7 +50,7 @@ ModuGate 主要解决的是：
 3. 进入视频工坊提交测试任务，确认结果可回填
 4. 外部客户端配置统一 Base URL 与统一 API Key，模型选 agnes-video-v2.0
 
-![价值图谱](https://github.com/Laity1m/modugate-desktop/releases/download/untagged-8602ec8154235a5eb8f8/modugate-value.svg)
+![价值图谱](../assets/modugate-value.svg)
 
 ## 下载与校验
 
