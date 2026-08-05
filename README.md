@@ -50,7 +50,7 @@ ModuGate 主要解决的是：
 3. 进入视频工坊提交测试任务，确认结果可回填
 4. 外部客户端配置统一 Base URL 与统一 API Key，模型选 agnes-video-v2.0
 
-![价值图谱](../assets/modugate-value.svg)
+![价值图谱](./assets/modugate-value.svg)
 
 ## 下载与校验
 
