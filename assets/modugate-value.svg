@@ -1,0 +1,18 @@
+﻿<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800'>
+  <rect width='1200' height='800' fill='#ffffff'/>
+  <g font-family='Arial' text-anchor='middle'>
+    <rect x='80' y='70' width='1040' height='660' rx='24' fill='#0f172a' stroke='#4ade80' stroke-width='6'/>
+    <text x='600' y='150' fill='#4ade80' font-size='50'>ModuGate 0.5.0 价值图谱</text>
+    <rect x='130' y='220' width='260' height='420' rx='18' fill='#1f2937'/>
+    <rect x='470' y='220' width='260' height='420' rx='18' fill='#1f2937'/>
+    <rect x='810' y='220' width='260' height='420' rx='18' fill='#1f2937'/>
+  </g>
+  <g fill='white' font-family='Arial' font-size='30' text-anchor='middle'>
+    <text x='260' y='280'>多模型聚合</text><text x='260' y='330' font-size='22'>OpenAI 兼容路径</text><text x='260' y='370' font-size='22'>统一请求参数</text><text x='260' y='410' font-size='22'>统一错误模型</text>
+    <text x='600' y='280'>本地化体验</text><text x='600' y='330' font-size='22'>托盘常驻</text><text x='600' y='370' font-size='22'>局域网协同</text><text x='600' y='410' font-size='22'>任务历史追踪</text>
+    <text x='940' y='280'>生成稳定性</text><text x='940' y='330' font-size='22'>超时与重试</text><text x='940' y='370' font-size='22'>下载结果自动回写</text><text x='940' y='410' font-size='22'>安全边界</text>
+    <text x='260' y='640' font-size='24' fill='#60a5fa'>适合 AI 客户端开发者、视频工作流</text>
+    <text x='600' y='640' font-size='24' fill='#60a5fa'>适合独立工作者、小团队快速接入</text>
+    <text x='940' y='640' font-size='24' fill='#60a5fa'>适合有本地部署与安全要求场景</text>
+  </g>
+</svg>
