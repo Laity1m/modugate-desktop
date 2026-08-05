@@ -426,6 +426,7 @@ function registerIpc() {
       'https://github.com/zhizinan1997/jimeng-free-api-all',
       'https://github.com/iptag/jimeng-api',
       'https://jimeng.jianying.com',
+      'https://platform.agnes-ai.com',
       'https://hermes-agent.nousresearch.com',
       'https://docs.anthropic.com',
       'https://developers.openai.com'

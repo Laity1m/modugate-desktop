@@ -679,7 +679,7 @@ function setVideoConnectionKind(kind) {
   } else {
     $('#video-protocol').disabled = false;
   }
-  setVideoConnectionKind($('#video-connection-kind').value);
+  setVideoProtocol($('#video-protocol').value);
   $('#video-reference-block').classList.toggle('hidden', selected === 'agnes' || $('#video-protocol').value === 'chat');
   updateVideoApiExample();
 }
@@ -1188,6 +1188,7 @@ async function applyAgnesPreset() {
   $('#video-duration').value = '5';
   setVideoConnectionKind('agnes');
   await saveSettings(false);
+  setPage('videos');
   toast($('#agnes-api-key').value.trim()
     ? 'Agnes 视频中转已启用'
     : '已应用 Agnes 预设，请填写 API Key 后保存', $('#agnes-api-key').value.trim() ? 'success' : 'info');

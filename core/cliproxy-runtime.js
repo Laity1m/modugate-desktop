@@ -8,7 +8,7 @@ const { listLanIPv4, makeLanUrl } = require('./network-access');
 
 const OAUTH_PROVIDERS = Object.freeze({
   claude: { label: 'Claude Code', endpoint: 'anthropic-auth-url' },
-  codex: { label: 'ChatGPT / Codex', endpoint: 'codex-auth-url' },
+  codex: { label: 'ChatGPT 登录（用于 Codex）', endpoint: 'codex-auth-url' },
   google: { label: 'Google / Gemini', endpoint: 'antigravity-auth-url' },
   kimi: { label: 'Kimi', endpoint: 'kimi-auth-url' },
   xai: { label: 'xAI / Grok', endpoint: 'xai-auth-url' }
