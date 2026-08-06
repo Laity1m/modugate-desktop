@@ -56,7 +56,8 @@ class CliProxyRuntime {
     this.allowLan = Boolean(options.allowLan);
     this.activeAllowLan = null;
     this.lanAddressResolver = options.lanAddressResolver || (() => listLanIPv4().map((item) => item.address));
-    this.binaryPath = path.join(this.runtimeRoot, 'cli-proxy-api.exe');
+    this.binaryCandidates = (options.binaryCandidates || ['cli-proxy-api.exe', 'CLIProxyAPI.exe']).map(String);
+    this.binaryPath = this.findBinary();
     this.configPath = path.join(this.dataRoot, 'config.yaml');
     this.authDir = path.join(this.dataRoot, 'auth');
     this.staticDir = path.join(this.dataRoot, 'static');
@@ -72,6 +73,30 @@ class CliProxyRuntime {
   setLanAccess(enabled) {
     this.allowLan = Boolean(enabled);
     return this.allowLan;
+  }
+
+  findBinary() {
+    for (const candidate of this.binaryCandidates) {
+      const candidatePath = path.join(this.runtimeRoot, candidate);
+      if (fs.existsSync(candidatePath)) return candidatePath;
+    }
+    const nested = (() => {
+      const candidates = new Set(this.binaryCandidates.map((name) => String(name).toLowerCase()));
+      const queue = [this.runtimeRoot];
+      while (queue.length) {
+        const current = queue.pop();
+        for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+          const next = path.join(current, entry.name);
+          if (entry.isDirectory()) {
+            queue.push(next);
+          } else if (candidates.has(entry.name.toLowerCase())) {
+            return next;
+          }
+        }
+      }
+      return null;
+    })();
+    return nested || null;
   }
 
   getLanAddresses() {
@@ -210,7 +235,8 @@ class CliProxyRuntime {
     this.lastError = '';
     this.stopping = false;
     try {
-      if (!fs.existsSync(this.binaryPath)) throw new Error('CLIProxyAPI 运行组件不完整');
+      this.binaryPath = this.findBinary();
+      if (!this.binaryPath) throw new Error('CLIProxyAPI 运行组件不完整：未找到 cli-proxy-api.exe');
       const secrets = this.loadOrCreateSecrets();
       this.writeConfig(secrets);
       this.prepareManagementPanel();

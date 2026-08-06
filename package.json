@@ -1,6 +1,6 @@
 {
   "name": "modugate-desktop",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Windows AI gateway with Agnes video relay, image generation, LAN access, and API compatibility",
   "main": "main.js",
   "author": "Laity1m and ModuGate contributors",
@@ -12,9 +12,10 @@
     "test:lan": "node scripts/lan-smoke.js",
     "test:ui": ".\\node_modules\\electron\\dist\\electron.exe scripts\\ui-smoke.js",
     "verify:jimeng-runtime": "node scripts/verify-jimeng-runtime.js",
-    "build:dir": "node scripts/verify-jimeng-runtime.js && electron-builder --win --dir --publish=never",
-    "build:win": "node scripts/verify-jimeng-runtime.js && electron-builder --win nsis --publish=never",
-    "build:portable": "node scripts/verify-jimeng-runtime.js && electron-builder --win portable --publish=never"
+    "ensure:cliproxy-runtime": "node scripts/ensure-cliproxy-runtime.js",
+    "build:dir": "node scripts/ensure-cliproxy-runtime.js && node scripts/verify-jimeng-runtime.js && electron-builder --win --dir --publish=never",
+    "build:win": "node scripts/ensure-cliproxy-runtime.js && node scripts/verify-jimeng-runtime.js && electron-builder --win nsis --publish=never",
+    "build:portable": "node scripts/ensure-cliproxy-runtime.js && node scripts/verify-jimeng-runtime.js && electron-builder --win portable --publish=never"
   },
   "devDependencies": {
     "electron": "^37.2.3",

@@ -6,7 +6,7 @@ on:
       tag:
         description: Release tag
         required: true
-        default: v0.5.0
+        default: v0.5.1
 
 permissions:
   contents: write
@@ -42,7 +42,7 @@ jobs:
         with:
           tag_name: ${{ inputs.tag }}
           name: ModuGate ${{ inputs.tag }}
-          files: release-all-in-one/ModuGate-Setup-0.5.0-x64.exe
+          files: release-all-in-one/ModuGate-Setup-${{ inputs.tag }}-x64.exe
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
