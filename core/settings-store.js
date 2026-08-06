@@ -106,16 +106,19 @@ class SettingsStore {
       settings.router.apiKey = this.decrypt(settings.router.apiKey);
       settings.agnes.apiKey = this.decrypt(settings.agnes.apiKey);
       settings.videos.apiKey = this.decrypt(settings.videos.apiKey);
-    settings.jimeng.accounts = settings.jimeng.accounts.map((account) => ({
-      ...account,
-      sessionId: this.decrypt(account.sessionId)
-    }));
-    settings.videos.gatewayApiKey = this.decrypt(settings.videos.gatewayApiKey);
-    return settings;
-  } catch {
-    return mergeSettings();
+      settings.videos.gatewayApiKey = this.decrypt(settings.videos.gatewayApiKey);
+      if (!settings.videos.gatewayApiKey) {
+        settings.videos.gatewayApiKey = `mg-v-${crypto.randomBytes(24).toString('base64url')}`;
+      }
+      settings.jimeng.accounts = settings.jimeng.accounts.map((account) => ({
+        ...account,
+        sessionId: this.decrypt(account.sessionId)
+      }));
+      return settings;
+    } catch {
+      return mergeSettings();
+    }
   }
-}
 
   save(input) {
     const settings = mergeSettings(input);
@@ -133,11 +136,11 @@ class SettingsStore {
     persisted.router.apiKey = this.encrypt(settings.router.apiKey);
     persisted.agnes.apiKey = this.encrypt(settings.agnes.apiKey);
     persisted.videos.apiKey = this.encrypt(settings.videos.apiKey);
+    persisted.videos.gatewayApiKey = this.encrypt(settings.videos.gatewayApiKey);
     persisted.jimeng.accounts = settings.jimeng.accounts.map((account) => ({
       ...account,
       sessionId: this.encrypt(account.sessionId)
     }));
-    persisted.videos.gatewayApiKey = this.encrypt(settings.videos.gatewayApiKey);
     fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
     const temporary = `${this.filePath}.tmp`;
     fs.writeFileSync(temporary, JSON.stringify(persisted, null, 2), { encoding: 'utf8', mode: 0o600 });

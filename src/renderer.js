@@ -1596,7 +1596,11 @@ function bindEvents() {
 }
 
 async function init() {
-  bindEvents();
+  try {
+    bindEvents();
+  } catch (error) {
+    toast(`初始化交互失败：${error.message}`, 'error');
+  }
   setImageMode('generate');
   updatePromptCount();
   renderReferenceImages();

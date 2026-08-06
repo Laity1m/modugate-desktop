@@ -215,6 +215,9 @@ class UnifiedGateway {
       if (this.scope === 'main' && /^\/v1\/videos/i.test(pathname)) {
         return { ...settings.connection, apiKey: settings.videos?.apiKey || settings.connection.apiKey };
       }
+      if (this.scope === 'video' && /^\/v1\/videos/i.test(pathname)) {
+        return { ...settings.connection, apiKey: settings.videos?.apiKey || settings.connection.apiKey };
+      }
       return settings.connection;
     }
     const account = settings.jimeng.accounts.find((item) => item.id === settings.jimeng.selectedAccountId);
