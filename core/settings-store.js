@@ -47,6 +47,7 @@ const DEFAULTS = Object.freeze({
   },
   videos: {
     model: 'agnes-video-v2.0',
+    apiKey: '',
     connectionKind: 'agnes',
     protocol: 'videos',
     referenceMode: 'first_last_frames',
@@ -102,6 +103,7 @@ class SettingsStore {
       settings.connection.apiKey = this.decrypt(settings.connection.apiKey);
       settings.router.apiKey = this.decrypt(settings.router.apiKey);
       settings.agnes.apiKey = this.decrypt(settings.agnes.apiKey);
+      settings.videos.apiKey = this.decrypt(settings.videos.apiKey);
       settings.jimeng.accounts = settings.jimeng.accounts.map((account) => ({
         ...account,
         sessionId: this.decrypt(account.sessionId)
@@ -125,6 +127,7 @@ class SettingsStore {
     persisted.connection.apiKey = this.encrypt(settings.connection.apiKey);
     persisted.router.apiKey = this.encrypt(settings.router.apiKey);
     persisted.agnes.apiKey = this.encrypt(settings.agnes.apiKey);
+    persisted.videos.apiKey = this.encrypt(settings.videos.apiKey);
     persisted.jimeng.accounts = settings.jimeng.accounts.map((account) => ({
       ...account,
       sessionId: this.encrypt(account.sessionId)

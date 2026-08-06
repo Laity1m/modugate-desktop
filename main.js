@@ -262,7 +262,10 @@ function registerIpc() {
           timeoutMs: Number(settings.agnes.timeoutSeconds || 900) * 1000
         });
       }
-      let connection = settings.connection;
+      let connection = {
+        ...settings.connection,
+        apiKey: settings.videos?.apiKey || settings.connection.apiKey
+      };
       if (payload?.connectionKind === 'jimeng') {
         const account = settings.jimeng.accounts.find((item) => item.id === settings.jimeng.selectedAccountId);
         if (!account) throw new Error('请先在“网关连接”中添加并选择一个即梦账号');

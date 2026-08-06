@@ -155,7 +155,7 @@ class UnifiedGateway {
       return;
     }
     if (target === 'jimeng') await this.ensureJimeng();
-    const connection = this.connectionFor(target, settings);
+    const connection = this.connectionFor(target, settings, url.pathname);
     await this.forward(request, response, url, body, connection, target);
   }
 
@@ -184,8 +184,13 @@ class UnifiedGateway {
     this.onLog(`统一 API：POST ${url.pathname} → agnes`, 'info');
   }
 
-  connectionFor(target, settings) {
-    if (target === 'main') return settings.connection;
+  connectionFor(target, settings, pathname = '/') {
+    if (target === 'main') {
+      if (/^\/v1\/videos/i.test(pathname)) {
+        return { ...settings.connection, apiKey: settings.videos?.apiKey || settings.connection.apiKey };
+      }
+      return settings.connection;
+    }
     const account = settings.jimeng.accounts.find((item) => item.id === settings.jimeng.selectedAccountId);
     if (!account) throw Object.assign(new Error('尚未添加或选择即梦账号'), { statusCode: 503 });
     return { baseUrl: settings.jimeng.gatewayUrl, apiKey: jimengCredential(account) };

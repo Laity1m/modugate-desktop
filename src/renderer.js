@@ -111,6 +111,7 @@ function readFormSettings() {
     },
     videos: {
       model: $('#video-model').value.trim() || 'agnes-video-v2.0',
+      apiKey: $('#video-api-key').value.trim(),
       connectionKind: ['main', 'jimeng', 'agnes'].includes($('#video-connection-kind').value) ? $('#video-connection-kind').value : 'agnes',
       protocol: $('#video-protocol').value,
       referenceMode: $('#video-reference-mode').value,
@@ -140,6 +141,7 @@ function applySettings(settings) {
   $('#image-format').value = settings.images?.outputFormat || 'png';
   $('#image-background').value = settings.images?.background || 'auto';
   $('#video-model').value = settings.videos?.model || 'agnes-video-v2.0';
+  $('#video-api-key').value = settings.videos?.apiKey || '';
   $('#video-connection-kind').value = ['main', 'jimeng', 'agnes'].includes(settings.videos?.connectionKind) ? settings.videos.connectionKind : 'agnes';
   $('#video-protocol').value = settings.videos?.protocol || 'videos';
   $('#video-reference-mode').value = settings.videos?.referenceMode || 'first_last_frames';
@@ -977,6 +979,17 @@ function setGatewayVisual(result) {
   renderModels(result.models);
 }
 
+function mergeUniqueModelLists(...modelLists) {
+  const merged = new Set();
+  modelLists.forEach((models) => {
+    (Array.isArray(models) ? models : []).forEach((item) => {
+      const model = String(item || '').trim();
+      if (model) merged.add(model);
+    });
+  });
+  return Array.from(merged);
+}
+
 async function testConnection({ save = true, notify = true } = {}) {
   const buttons = [$('#quick-test'), $('#test-connection')].filter(Boolean);
   buttons.forEach((button) => { button.disabled = true; });
@@ -986,6 +999,26 @@ async function testConnection({ save = true, notify = true } = {}) {
       baseUrl: $('#base-url').value.trim(),
       apiKey: $('#api-key').value.trim()
     });
+    const agnesApiKey = $('#agnes-api-key')?.value?.trim() || '';
+    const requiresAgnesModels = agnesApiKey || $('#video-connection-kind')?.value === 'agnes';
+    if (requiresAgnesModels) {
+      try {
+        const unifiedBaseUrl = $('#unified-api-url')?.textContent?.trim();
+        const unifiedApiKey = $('#unified-api-key')?.value?.trim();
+        if (unifiedBaseUrl && unifiedApiKey) {
+          const unified = await window.studio.gateway.test({
+            baseUrl: unifiedBaseUrl,
+            apiKey: unifiedApiKey
+          });
+          result.models = mergeUniqueModelLists(result.models, unified.models);
+        }
+      } catch {
+        // Fall back to current endpoint models when unified gateway is unavailable.
+      }
+      if (agnesApiKey && !result.models.includes('agnes-video-v2.0')) {
+        result.models = [...(result.models || []), 'agnes-video-v2.0'];
+      }
+    }
     setGatewayVisual(result);
     if (notify) toast(result.online ? `连接成功，发现 ${result.models.length} 个模型` : '连接失败，请查看诊断信息', result.online ? 'success' : 'error');
     return result;
@@ -1427,6 +1460,11 @@ function bindEvents() {
     const input = $('#api-key');
     input.type = input.type === 'password' ? 'text' : 'password';
     $('#toggle-secret').textContent = input.type === 'password' ? '显示' : '隐藏';
+  });
+  $('#toggle-video-key').addEventListener('click', () => {
+    const input = $('#video-api-key');
+    input.type = input.type === 'password' ? 'text' : 'password';
+    $('#toggle-video-key').textContent = input.type === 'password' ? '显示' : '隐藏';
   });
   $('#toggle-admin-password').addEventListener('click', () => {
     const input = $('#integrated-admin-password');
