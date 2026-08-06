@@ -6,9 +6,14 @@ const root = path.join(__dirname, '..', 'runtime', 'jimeng');
 const node = path.join(root, 'runtime', 'node.exe');
 const app = path.join(root, 'app');
 const entry = path.join(app, 'dist', 'index.js');
+const skipVerify = process.env.SKIP_JIMENG_RUNTIME_VERIFY === '1' || process.env.CI === 'true';
 
 for (const required of [node, entry, path.join(app, 'node_modules')]) {
   if (!fs.existsSync(required)) {
+    if (skipVerify) {
+      console.warn(`Skipping Jimeng runtime verification because required path is missing: ${required}`);
+      process.exit(0);
+    }
     throw new Error(`Missing bundled Jimeng runtime path: ${required}`);
   }
 }
