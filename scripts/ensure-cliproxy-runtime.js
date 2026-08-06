@@ -9,6 +9,11 @@ const VERSION = process.env.CLI_PROXY_VERSION || 'latest';
 const TARGET_ROOT = path.join(__dirname, '..', 'runtime', 'cliproxy');
 const TARGET_EXECUTABLES = ['cli-proxy-api.exe', 'CLIProxyAPI.exe'];
 
+function headers() {
+  const token = process.env.GITHUB_TOKEN;
+  return token ? { Authorization: `Bearer ${token}`, 'User-Agent': 'modugate-desktop' } : { 'User-Agent': 'modugate-desktop' };
+}
+
 function log(message) {
   process.stdout.write(`${message}\n`);
 }
@@ -56,9 +61,7 @@ function normalizeTag(version) {
 
 async function fetchJson(url) {
   const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'modugate-desktop'
-    }
+    headers: headers()
   });
   if (!response.ok) {
     throw new Error(`读取发布信息失败：${response.status} ${response.statusText}`);
@@ -68,9 +71,7 @@ async function fetchJson(url) {
 
 async function downloadToFile(url, target) {
   const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'modugate-desktop'
-    }
+    headers: headers()
   });
   if (!response.ok) {
     throw new Error(`下载资源失败：${response.status} ${response.statusText}`);
