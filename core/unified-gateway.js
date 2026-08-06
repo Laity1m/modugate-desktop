@@ -7,6 +7,21 @@ const { listLanIPv4, makeLanUrl } = require('./network-access');
 
 const MAX_PROXY_BODY_BYTES = 160 * 1024 * 1024;
 
+function gatewayConfig(scope, settings) {
+  if (scope === 'video') {
+    return {
+      port: settings?.videos?.gatewayPort || 8788,
+      apiKey: settings?.videos?.gatewayApiKey || '',
+      label: 'video'
+    };
+  }
+  return {
+    port: settings?.router?.port || 8787,
+    apiKey: settings?.router?.apiKey || '',
+    label: 'main'
+  };
+}
+
 function extractRequestModel(contentType, buffer) {
   if (!buffer?.length) return '';
   if (/application\/json/i.test(contentType || '')) {
@@ -27,6 +42,10 @@ function isAgnesModel(model) {
   return /^agnes(?:[-_]|$)/i.test(String(model || '').trim());
 }
 
+function isVideoModel(model) {
+  return /video|seedance|veo|kling|wan/i.test(String(model || '').trim());
+}
+
 function selectUpstream(pathname, model, hasJimengAccount, hasAgnesKey = false, defaultVideoProvider = '') {
   if (isAgnesModel(model)) return 'agnes';
   if (isJimengModel(model)) return 'jimeng';
@@ -42,7 +61,7 @@ function readRequestBody(request, limit = MAX_PROXY_BODY_BYTES) {
     request.on('data', (chunk) => {
       size += chunk.length;
       if (size > limit) {
-        reject(Object.assign(new Error('请求体超过统一网关 160 MB 限制'), { statusCode: 413 }));
+        reject(Object.assign(new Error('请求体积超过 160 MB 限制'), { statusCode: 413 }));
         request.destroy();
         return;
       }
@@ -68,11 +87,12 @@ function jsonResponse(response, statusCode, body) {
 }
 
 class UnifiedGateway {
-  constructor({ getSettings, ensureJimeng = async () => {}, generateAgnes = generateAgnesVideo, onLog = () => {} }) {
+  constructor({ getSettings, ensureJimeng = async () => {}, generateAgnes = generateAgnesVideo, onLog = () => {}, scope = 'main' }) {
     this.getSettings = getSettings;
     this.ensureJimeng = ensureJimeng;
     this.generateAgnes = generateAgnes;
     this.onLog = onLog;
+    this.scope = scope === 'video' ? 'video' : 'main';
     this.server = null;
     this.address = null;
     this.boundHost = null;
@@ -81,7 +101,7 @@ class UnifiedGateway {
   async start() {
     if (this.server) return this.status();
     const settings = this.getSettings();
-    const port = Number(settings.router?.port ?? 8787);
+    const { port, label } = gatewayConfig(this.scope, settings);
     this.server = http.createServer((request, response) => {
       this.handle(request, response).catch((error) => {
         if (!response.headersSent) {
@@ -97,7 +117,7 @@ class UnifiedGateway {
     });
     const info = this.server.address();
     this.address = `http://127.0.0.1:${info.port}`;
-    this.onLog(`统一 API 已启动：${this.address}/v1`, 'info');
+    this.onLog(`ModuGate ${label} API 已启动：${this.address}/v1`, 'info');
     return this.status();
   }
 
@@ -113,10 +133,11 @@ class UnifiedGateway {
 
   status() {
     const settings = this.getSettings();
-    const port = Number(settings.router?.port ?? 8787);
+    const { port } = gatewayConfig(this.scope, settings);
     const lanAddress = this.boundHost === '0.0.0.0' ? listLanIPv4()[0]?.address : '';
     return {
       running: Boolean(this.server),
+      scope: this.scope,
       root: this.address,
       apiBase: this.address ? `${this.address}/v1` : '',
       lanApiBase: lanAddress ? makeLanUrl(lanAddress, port, 'v1') : '',
@@ -131,17 +152,22 @@ class UnifiedGateway {
       jsonResponse(response, 200, { status: 'ok', service: 'ModuGate Unified Gateway' });
       return;
     }
-    const expectedKey = String(settings.router?.apiKey || '').trim();
+    const cfg = gatewayConfig(this.scope, settings);
+    const expectedKey = String(cfg.apiKey || '').trim();
     if (!expectedKey || bearerToken(request) !== expectedKey) {
-      jsonResponse(response, 401, { error: { message: '统一 API Key 无效' } });
+      jsonResponse(response, 401, { error: { message: '统一 API Key 不正确' } });
       return;
     }
     if (url.pathname === '/v1/models' && request.method === 'GET') {
-      await this.handleModels(response, settings);
+      await this.handleModels(response, settings, this.scope);
       return;
     }
     if (!url.pathname.startsWith('/v1/')) {
-      jsonResponse(response, 404, { error: { message: '仅支持 /v1 下的兼容接口' } });
+      jsonResponse(response, 404, { error: { message: '仅支持 /v1 下的网关接口' } });
+      return;
+    }
+    if (this.scope === 'video' && !/^\/v1\/videos(?:\/|$)/i.test(url.pathname)) {
+      jsonResponse(response, 404, { error: { message: '视频网关仅支持 /v1/videos/*' } });
       return;
     }
 
@@ -165,12 +191,12 @@ class UnifiedGateway {
       return;
     }
     if (!/application\/json/i.test(request.headers['content-type'] || '')) {
-      jsonResponse(response, 415, { error: { message: 'Agnes 统一接口当前仅支持 JSON 文生视频请求' } });
+      jsonResponse(response, 415, { error: { message: 'Agnes 网关当前仅支持 JSON 请求体' } });
       return;
     }
     let payload;
     try { payload = JSON.parse(body.toString('utf8')); } catch {
-      jsonResponse(response, 400, { error: { message: '请求 JSON 格式无效' } });
+      jsonResponse(response, 400, { error: { message: '请求 JSON 格式错误' } });
       return;
     }
     const result = await this.generateAgnes(settings.agnes, payload, { timeoutMs: Number(settings.agnes?.timeoutSeconds || 900) * 1000 });
@@ -181,22 +207,22 @@ class UnifiedGateway {
       created: Math.floor(Date.now() / 1000),
       data: result.urls.map((videoUrl) => ({ url: videoUrl }))
     });
-    this.onLog(`统一 API：POST ${url.pathname} → agnes`, 'info');
+    this.onLog(`统一 API：${request.method} ${url.pathname} -> agnes`, 'info');
   }
 
   connectionFor(target, settings, pathname = '/') {
     if (target === 'main') {
-      if (/^\/v1\/videos/i.test(pathname)) {
+      if (this.scope === 'main' && /^\/v1\/videos/i.test(pathname)) {
         return { ...settings.connection, apiKey: settings.videos?.apiKey || settings.connection.apiKey };
       }
       return settings.connection;
     }
     const account = settings.jimeng.accounts.find((item) => item.id === settings.jimeng.selectedAccountId);
-    if (!account) throw Object.assign(new Error('尚未添加或选择即梦账号'), { statusCode: 503 });
+    if (!account) throw Object.assign(new Error('未选择可用的即梦账号'), { statusCode: 503 });
     return { baseUrl: settings.jimeng.gatewayUrl, apiKey: jimengCredential(account) };
   }
 
-  async handleModels(response, settings) {
+  async handleModels(response, settings, scope = 'main') {
     const targets = [{ name: 'main', connection: settings.connection }];
     const account = settings.jimeng?.accounts?.find((item) => item.id === settings.jimeng.selectedAccountId);
     if (account) {
@@ -220,11 +246,15 @@ class UnifiedGateway {
           });
         }
       } catch {
-        // A temporarily unavailable upstream must not hide models from the other one.
+        // 一次上游不可用不影响其它来源模型输出。
       }
     }));
     if (settings.agnes?.apiKey && !collected.some((entry) => entry.id === 'agnes-video-v2.0')) {
       collected.push({ id: 'agnes-video-v2.0', object: 'model', owned_by: 'agnes-ai' });
+    }
+    if (scope === 'video') {
+      jsonResponse(response, 200, { object: 'list', data: collected.filter((item) => isVideoModel(item.id)) });
+      return;
     }
     jsonResponse(response, 200, { object: 'list', data: collected });
   }
@@ -258,12 +288,12 @@ class UnifiedGateway {
     response.writeHead(upstream.status, responseHeaders);
     if (upstream.body) Readable.fromWeb(upstream.body).pipe(response);
     else response.end();
-    this.onLog(`统一 API：${request.method} ${url.pathname} → ${target}${modelLogSuffix(url.pathname)}`, 'info');
+    this.onLog(`统一 API：${request.method} ${url.pathname} -> ${target}${modelLogSuffix(url.pathname)}`, 'info');
   }
 }
 
 function modelLogSuffix(pathname) {
-  return pathname.length > 80 ? '' : ` · ${pathname}`;
+  return pathname.length > 80 ? '' : ` 路由 ${pathname}`;
 }
 
 module.exports = {

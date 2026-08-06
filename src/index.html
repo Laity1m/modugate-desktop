@@ -32,7 +32,7 @@
           <div><small>网关状态</small><strong id="side-status-text">尚未检测</strong></div>
         </div>
         <div class="background-hint">关闭窗口后继续在系统托盘运行</div>
-        <div class="version">MEDIA GATEWAY · v0.4.0</div>
+        <div class="version">MODUGATE · v0.5.2</div>
       </div>
     </aside>
 
@@ -145,6 +145,13 @@
                   <button class="button button-secondary" id="copy-unified-url">复制地址</button>
                   <div><small>统一 API Key</small><div class="input-wrap"><input id="unified-api-key" type="password" readonly><button type="button" class="input-action" id="toggle-unified-key">显示</button></div></div>
                   <button class="button button-secondary" id="copy-unified-key">复制 Key</button>
+                </div>
+                <div class="unified-credential-card">
+                  <div><small>供视频通道调用的 Base URL</small><code id="video-gateway-api-url">http://127.0.0.1:8788/v1</code></div>
+                  <button class="button button-secondary" id="copy-video-gateway-url">复制地址</button>
+                  <label class="field field-wide"><span>视频网关端口</span><input id="video-gateway-port" type="number" min="1024" max="65535" step="1" value="8788"></label>
+                  <div><small>视频网关 API Key</small><div class="input-wrap"><input id="video-gateway-api-key" type="password" readonly><button type="button" class="input-action" id="toggle-video-gateway-key">显示</button></div></div>
+                  <button class="button button-secondary" id="copy-video-gateway-key">复制 Key</button>
                 </div>
               </div>
               <div class="jimeng-account-side">

@@ -112,6 +112,8 @@ function readFormSettings() {
     videos: {
       model: $('#video-model').value.trim() || 'agnes-video-v2.0',
       apiKey: $('#video-api-key').value.trim(),
+      gatewayPort: Number($('#video-gateway-port')?.value || state.settings?.videos?.gatewayPort || 8788),
+      gatewayApiKey: $('#video-gateway-api-key').value.trim(),
       connectionKind: ['main', 'jimeng', 'agnes'].includes($('#video-connection-kind').value) ? $('#video-connection-kind').value : 'agnes',
       protocol: $('#video-protocol').value,
       referenceMode: $('#video-reference-mode').value,
@@ -131,6 +133,9 @@ function applySettings(settings) {
   $('#agnes-api-key').value = settings.agnes?.apiKey || '';
   $('#unified-api-key').value = settings.router?.apiKey || '';
   $('#unified-api-url').textContent = `http://127.0.0.1:${settings.router?.port || 8787}/v1`;
+  $('#video-gateway-api-url').textContent = `http://127.0.0.1:${settings.videos?.gatewayPort || 8788}/v1`;
+  $('#video-gateway-api-key').value = settings.videos?.gatewayApiKey || '';
+  if ($('#video-gateway-port')) $('#video-gateway-port').value = String(settings.videos?.gatewayPort || 8788);
   state.jimengAccounts = Array.isArray(settings.jimeng?.accounts) ? settings.jimeng.accounts.map((item) => ({ ...item })) : [];
   $('#default-model').value = settings.connection.defaultModel || '';
   $('#play-model').value = settings.connection.defaultModel || '';
@@ -833,7 +838,11 @@ async function pickVideoReferences() {
 }
 
 function updateVideoApiExample() {
-  const baseUrl = ($('#unified-api-url')?.textContent || 'http://127.0.0.1:8787/v1').replace(/\/+$/, '').replace(/\/v1$/, '');
+  const baseUrl = (
+    $('#video-gateway-api-url')?.textContent
+    || $('#unified-api-url')?.textContent
+    || 'http://127.0.0.1:8788/v1'
+  ).replace(/\/+$/, '').replace(/\/v1$/, '');
   const options = videoFormOptions();
   const prompt = options.prompt || '在这里填写视频提示词';
   let example;
@@ -1192,6 +1201,14 @@ async function refreshRouterStatus() {
   state.routerRunning = Boolean(result.running);
   if (result.apiBase) $('#unified-api-url').textContent = result.allowLan && result.lanApiBase ? result.lanApiBase : result.apiBase;
   if (result.apiKey) $('#unified-api-key').value = result.apiKey;
+  if (result.videoGateway?.apiBase) {
+    $('#video-gateway-api-url').textContent = result.videoGateway.allowLan && result.videoGateway.lanApiBase
+      ? result.videoGateway.lanApiBase
+      : result.videoGateway.apiBase;
+  } else {
+    $('#video-gateway-api-url').textContent = `http://127.0.0.1:${state.settings?.videos?.gatewayPort || 8788}/v1`;
+  }
+  if (result.videoApiKey) $('#video-gateway-api-key').value = result.videoApiKey;
   renderJimengAccounts();
   updateVideoApiExample();
 }
@@ -1451,6 +1468,22 @@ function bindEvents() {
   $('#copy-unified-key').addEventListener('click', async () => {
     await window.studio.clipboard.writeText($('#unified-api-key').value.trim());
     toast('统一 API Key 已复制，请只提供给可信设备', 'success');
+  });
+  $('#toggle-video-gateway-key').addEventListener('click', () => {
+    const input = $('#video-gateway-api-key');
+    input.type = input.type === 'password' ? 'text' : 'password';
+    $('#toggle-video-gateway-key').textContent = input.type === 'password' ? '鏄剧ず' : '闅愯棌';
+  });
+  $('#copy-video-gateway-url').addEventListener('click', async () => {
+    await window.studio.clipboard.writeText($('#video-gateway-api-url').textContent.trim());
+    toast('瑙嗛 Base URL 宸插鍒?, 'success');
+  });
+  $('#copy-video-gateway-key').addEventListener('click', async () => {
+    await window.studio.clipboard.writeText($('#video-gateway-api-key').value.trim());
+    toast('瑙嗛 API Key 宸插鍒讹紝璇峰彧鎻愪緵鎮ㄤ娇鐢?, 'success');
+  });
+  $('#video-gateway-port').addEventListener('change', async () => {
+    await saveSettings(false);
   });
   $('#jimeng-gateway-url').addEventListener('change', async () => {
     await saveSettings(false);

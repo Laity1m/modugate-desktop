@@ -37,6 +37,7 @@ let cliProxyRuntime;
 let imageHistoryStore;
 let jimengRuntime;
 let unifiedGateway;
+let videoGateway;
 let allowQuit = false;
 let shuttingDown = false;
 let backgroundNoticeShown = false;
@@ -153,9 +154,15 @@ function registerIpc() {
     if (settings.jimeng.accounts.length) await jimengRuntime.ensureForUrl(settings.jimeng.gatewayUrl);
     else await jimengRuntime.stop();
     const desiredRouterHost = settings.service.allowLan ? '0.0.0.0' : '127.0.0.1';
-    if (unifiedGateway?.server && unifiedGateway.boundHost !== desiredRouterHost) {
-      await unifiedGateway.stop();
-      await unifiedGateway.start();
+    if ((unifiedGateway?.server || videoGateway?.server)) {
+      if (unifiedGateway?.server && unifiedGateway.boundHost !== desiredRouterHost) {
+        await unifiedGateway.stop();
+        await unifiedGateway.start();
+      }
+      if (videoGateway?.server) {
+        await videoGateway.stop();
+        await videoGateway.start();
+      }
     }
     return settings;
   });
@@ -304,7 +311,9 @@ function registerIpc() {
   });
   ipcMain.handle('router:status', () => ({
     ...unifiedGateway.status(),
-    apiKey: settingsStore.load().router.apiKey
+    apiKey: settingsStore.load().router.apiKey,
+    videoGateway: videoGateway?.status() || null,
+    videoApiKey: settingsStore.load().videos?.gatewayApiKey || ''
   }));
   ipcMain.handle('clipboard:write-text', (_event, value) => {
     clipboard.writeText(String(value || ''));
@@ -486,11 +495,29 @@ app.whenReady().then(async () => {
     },
     onLog: (message, level) => processManager?.log(message, level)
   });
+  videoGateway = new UnifiedGateway({
+    getSettings: () => settingsStore.load(),
+    ensureJimeng: async () => {
+      const current = settingsStore.load();
+      await jimengRuntime.ensureForUrl(current.jimeng.gatewayUrl);
+    },
+    onLog: (message, level) => processManager?.log(message, level),
+    scope: 'video'
+  });
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
   registerIpc();
   createTray();
   createWindow();
-  await unifiedGateway.start().catch((error) => processManager.log(`统一 API 启动失败：${error.message}`, 'error'));
+  await Promise.allSettled([
+    unifiedGateway.start(),
+    videoGateway.start()
+  ]).then((results) => {
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') return;
+      const label = index === 0 ? '统一' : '视频';
+      processManager.log(`${label} API 启动失败：${result.reason?.message || result.reason}`, 'error');
+    });
+  });
   if (settings.jimeng.accounts.length) {
     jimengRuntime.ensureForUrl(settings.jimeng.gatewayUrl).catch((error) => processManager.log(error.message, 'error'));
   }
@@ -508,6 +535,7 @@ app.on('before-quit', (event) => {
   Promise.allSettled([
     processManager.dispose(),
     unifiedGateway?.stop(),
+    videoGateway?.stop(),
     jimengRuntime?.stop()
   ]).finally(() => {
     allowQuit = true;

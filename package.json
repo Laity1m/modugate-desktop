@@ -1,6 +1,6 @@
 {
   "name": "modugate-desktop",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Windows AI gateway with Agnes video relay, image generation, LAN access, and API compatibility",
   "main": "main.js",
   "author": "Laity1m and ModuGate contributors",

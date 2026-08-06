@@ -48,6 +48,8 @@ const DEFAULTS = Object.freeze({
   videos: {
     model: 'agnes-video-v2.0',
     apiKey: '',
+    gatewayPort: 8788,
+    gatewayApiKey: '',
     connectionKind: 'agnes',
     protocol: 'videos',
     referenceMode: 'first_last_frames',
@@ -104,21 +106,24 @@ class SettingsStore {
       settings.router.apiKey = this.decrypt(settings.router.apiKey);
       settings.agnes.apiKey = this.decrypt(settings.agnes.apiKey);
       settings.videos.apiKey = this.decrypt(settings.videos.apiKey);
-      settings.jimeng.accounts = settings.jimeng.accounts.map((account) => ({
-        ...account,
-        sessionId: this.decrypt(account.sessionId)
-      }));
-      return settings;
-    } catch {
-      return mergeSettings();
-    }
+    settings.jimeng.accounts = settings.jimeng.accounts.map((account) => ({
+      ...account,
+      sessionId: this.decrypt(account.sessionId)
+    }));
+    settings.videos.gatewayApiKey = this.decrypt(settings.videos.gatewayApiKey);
+    return settings;
+  } catch {
+    return mergeSettings();
   }
+}
 
   save(input) {
     const settings = mergeSettings(input);
     if (!settings.router.apiKey) settings.router.apiKey = `mg-${crypto.randomBytes(24).toString('base64url')}`;
     const port = Number.parseInt(settings.router.port, 10);
     settings.router.port = port >= 1024 && port <= 65535 ? port : 8787;
+    const videoGatewayPort = Number.parseInt(settings.videos.gatewayPort, 10);
+    settings.videos.gatewayPort = videoGatewayPort >= 1024 && videoGatewayPort <= 65535 ? videoGatewayPort : 8788;
     settings.jimeng.accounts = settings.jimeng.accounts.map(normalizeJimengAccount);
     if (!settings.jimeng.accounts.some((account) => account.id === settings.jimeng.selectedAccountId)) {
       settings.jimeng.selectedAccountId = settings.jimeng.accounts[0]?.id || '';
@@ -132,6 +137,7 @@ class SettingsStore {
       ...account,
       sessionId: this.encrypt(account.sessionId)
     }));
+    persisted.videos.gatewayApiKey = this.encrypt(settings.videos.gatewayApiKey);
     fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
     const temporary = `${this.filePath}.tmp`;
     fs.writeFileSync(temporary, JSON.stringify(persisted, null, 2), { encoding: 'utf8', mode: 0o600 });
