@@ -10,13 +10,13 @@ const MAX_PROXY_BODY_BYTES = 160 * 1024 * 1024;
 function gatewayConfig(scope, settings) {
   if (scope === 'video') {
     return {
-      port: settings?.videos?.gatewayPort || 8788,
+      port: settings?.videos?.gatewayPort ?? 8788,
       apiKey: settings?.videos?.gatewayApiKey || '',
       label: 'video'
     };
   }
   return {
-    port: settings?.router?.port || 8787,
+    port: settings?.router?.port ?? 8787,
     apiKey: settings?.router?.apiKey || '',
     label: 'main'
   };

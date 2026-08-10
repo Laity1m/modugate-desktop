@@ -63,6 +63,13 @@ function wait(milliseconds, signal) {
   });
 }
 
+function throwIfAgnesFailed(value) {
+  const state = String(value?.status || value?.state || '').toLowerCase();
+  if (['failed', 'error', 'cancelled', 'canceled'].includes(state)) {
+    throw new Error(`Agnes 生成失败：${errorMessage(value, state)}`);
+  }
+}
+
 async function generateAgnesVideo(connection, payload, options = {}) {
   const apiKey = String(connection?.apiKey || '').trim();
   if (!apiKey) throw new Error('请先在“网关连接”中填写 Agnes API Key');
@@ -95,9 +102,7 @@ async function generateAgnesVideo(connection, payload, options = {}) {
     const initialUrl = extractVideoUrl(final);
     const initialState = String(final.status || final.state || '').toLowerCase();
     if (initialUrl || ['completed', 'succeeded', 'success'].includes(initialState)) break;
-    if (['failed', 'error', 'cancelled', 'canceled'].includes(initialState)) {
-      throw new Error(`Agnes 生成失败：${errorMessage(final, initialState)}`);
-    }
+    throwIfAgnesFailed(final);
     await wait(intervalMs, options.signal);
     let response = await fetch(`${root}/agnesapi?video_id=${encodeURIComponent(videoId)}&model_name=${encodeURIComponent(model)}`, { headers, signal: options.signal });
     if (response.status === 404 || response.status === 405) {
@@ -105,6 +110,7 @@ async function generateAgnesVideo(connection, payload, options = {}) {
     }
     final = await readJson(response);
     if (!response.ok) throw new Error(`Agnes 查询失败（HTTP ${response.status}）：${errorMessage(final, '未知错误')}`);
+    throwIfAgnesFailed(final);
   }
   const url = extractVideoUrl(final);
   if (!url) throw new Error(`Agnes 视频生成超时或未返回地址（任务 ID：${videoId}）`);
