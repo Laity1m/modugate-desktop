@@ -12,10 +12,11 @@
     "test:lan": "node scripts/lan-smoke.js",
     "test:ui": ".\\node_modules\\electron\\dist\\electron.exe scripts\\ui-smoke.js",
     "verify:jimeng-runtime": "node scripts/verify-jimeng-runtime.js",
+    "ensure:jimeng-runtime": "node scripts/ensure-jimeng-runtime.js",
     "ensure:cliproxy-runtime": "node scripts/ensure-cliproxy-runtime.js",
-    "build:dir": "node scripts/ensure-cliproxy-runtime.js && node scripts/verify-jimeng-runtime.js && electron-builder --win --dir --publish=never",
-    "build:win": "node scripts/ensure-cliproxy-runtime.js && node scripts/verify-jimeng-runtime.js && electron-builder --win nsis --publish=never",
-    "build:portable": "node scripts/ensure-cliproxy-runtime.js && node scripts/verify-jimeng-runtime.js && electron-builder --win portable --publish=never"
+    "build:dir": "node scripts/ensure-cliproxy-runtime.js && node scripts/ensure-jimeng-runtime.js && node scripts/verify-jimeng-runtime.js && electron-builder --win --dir --publish=never",
+    "build:win": "node scripts/ensure-cliproxy-runtime.js && node scripts/ensure-jimeng-runtime.js && node scripts/verify-jimeng-runtime.js && electron-builder --win nsis --publish=never",
+    "build:portable": "node scripts/ensure-cliproxy-runtime.js && node scripts/ensure-jimeng-runtime.js && node scripts/verify-jimeng-runtime.js && electron-builder --win portable --publish=never"
   },
   "devDependencies": {
     "electron": "^37.2.3",

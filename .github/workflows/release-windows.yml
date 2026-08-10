@@ -6,7 +6,7 @@ on:
       tag:
         description: Release tag
         required: true
-        default: v0.5.1
+        default: v0.5.2
 
 permissions:
   contents: write
@@ -34,8 +34,6 @@ jobs:
 
       - name: Build Windows installer
         run: pnpm run build:win
-        env:
-          SKIP_JIMENG_RUNTIME_VERIFY: '1'
 
       - name: Upload installer to release
         uses: softprops/action-gh-release@v2

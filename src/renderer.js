@@ -1433,168 +1433,189 @@ async function openConsole() {
 }
 
 function bindEvents() {
-  $$('.nav-item').forEach((item) => item.addEventListener('click', () => setPage(item.dataset.pageTarget)));
-  $$('[data-go]').forEach((item) => item.addEventListener('click', () => setPage(item.dataset.go)));
-  $('#quick-test').addEventListener('click', () => testConnection());
-  $('#test-connection').addEventListener('click', () => testConnection());
-  $('#save-connection').addEventListener('click', () => saveSettings());
-  $('#quick-console').addEventListener('click', openConsole);
-  $('#open-console').addEventListener('click', openConsole);
-  $('#apply-jimeng-preset').addEventListener('click', applyJimengPreset);
-  $('#apply-agnes-preset').addEventListener('click', applyAgnesPreset);
-  $('#open-jimeng-account-form').addEventListener('click', openJimengAccountForm);
-  $('#add-jimeng-account').addEventListener('click', openJimengAccountForm);
-  $('#cancel-jimeng-account').addEventListener('click', closeJimengAccountForm);
-  $('#save-jimeng-account').addEventListener('click', saveJimengAccount);
-  $('#toggle-jimeng-sessionid').addEventListener('click', () => {
-    const input = $('#jimeng-sessionid');
+  const bind = (selectorOrNode, type, handler) => {
+    const node = typeof selectorOrNode === 'string' ? $(selectorOrNode) : selectorOrNode;
+    if (!node) return;
+    node.addEventListener(type, handler);
+  };
+
+  const bindMany = (selector, type, handler) => {
+    $$(selector).forEach((node) => node.addEventListener(type, handler));
+  };
+
+  const bindInputs = (selectors, type, handler) => {
+    selectors.forEach((selector) => {
+      const node = $(selector);
+      if (node) node.addEventListener(type, handler);
+    });
+  };
+
+  const toggle = (selector, showText = '显示', hideText = '隐藏') => (event) => {
+    const input = $(selector);
+    if (!input) return;
     input.type = input.type === 'password' ? 'text' : 'password';
-    $('#toggle-jimeng-sessionid').textContent = input.type === 'password' ? '显示' : '隐藏';
+    if (event?.currentTarget) {
+      event.currentTarget.textContent = input.type === 'password' ? showText : hideText;
+    }
+  };
+
+  bindMany('.nav-item', 'click', (event) => setPage(event.currentTarget.dataset.pageTarget));
+  bindMany('[data-go]', 'click', (event) => setPage(event.currentTarget.dataset.go));
+  bind('#quick-test', 'click', () => testConnection());
+  bind('#test-connection', 'click', () => testConnection());
+  bind('#save-connection', 'click', () => saveSettings());
+  bind('#quick-console', 'click', openConsole);
+  bind('#open-console', 'click', openConsole);
+  bind('#apply-jimeng-preset', 'click', applyJimengPreset);
+  bind('#apply-agnes-preset', 'click', applyAgnesPreset);
+  bind('#open-jimeng-account-form', 'click', openJimengAccountForm);
+  bind('#add-jimeng-account', 'click', openJimengAccountForm);
+  bind('#cancel-jimeng-account', 'click', closeJimengAccountForm);
+  bind('#save-jimeng-account', 'click', saveJimengAccount);
+  bind('#toggle-jimeng-sessionid', 'click', toggle('#jimeng-sessionid'));
+  bind('#toggle-agnes-key', 'click', toggle('#agnes-api-key'));
+  bind('#toggle-unified-key', 'click', toggle('#unified-api-key'));
+  bind('#toggle-video-gateway-key', 'click', toggle('#video-gateway-api-key'));
+  bind('#toggle-secret', 'click', toggle('#api-key'));
+  bind('#toggle-video-key', 'click', toggle('#video-api-key'));
+  bind('#toggle-admin-password', 'click', toggle('#integrated-admin-password'));
+  bind('#toggle-cliproxy-key', 'click', toggle('#cliproxy-api-key'));
+  bind('#toggle-management-key', 'click', toggle('#cliproxy-management-key'));
+  bind('#copy-unified-url', 'click', async () => {
+    const value = $('#unified-api-url');
+    if (!value) return;
+    await window.studio.clipboard.writeText(value.textContent.trim());
+    toast('已复制统一 Base URL', 'success');
   });
-  $('#toggle-agnes-key').addEventListener('click', () => {
-    const input = $('#agnes-api-key');
-    input.type = input.type === 'password' ? 'text' : 'password';
-    $('#toggle-agnes-key').textContent = input.type === 'password' ? '显示' : '隐藏';
+  bind('#copy-unified-key', 'click', async () => {
+    await window.studio.clipboard.writeText($('#unified-api-key')?.value.trim() || '');
+    toast('已复制统一 API Key', 'success');
   });
-  $('#toggle-unified-key').addEventListener('click', () => {
-    const input = $('#unified-api-key');
-    input.type = input.type === 'password' ? 'text' : 'password';
-    $('#toggle-unified-key').textContent = input.type === 'password' ? '显示' : '隐藏';
+  bind('#copy-video-gateway-url', 'click', async () => {
+    await window.studio.clipboard.writeText($('#video-gateway-api-url')?.textContent.trim() || '');
+    toast('已复制视频网关 Base URL', 'success');
   });
-  $('#copy-unified-url').addEventListener('click', async () => {
-    await window.studio.clipboard.writeText($('#unified-api-url').textContent.trim());
-    toast('统一 Base URL 已复制', 'success');
+  bind('#copy-video-gateway-key', 'click', async () => {
+    await window.studio.clipboard.writeText($('#video-gateway-api-key')?.value.trim() || '');
+    toast('已复制视频网关 API Key', 'success');
   });
-  $('#copy-unified-key').addEventListener('click', async () => {
-    await window.studio.clipboard.writeText($('#unified-api-key').value.trim());
-    toast('统一 API Key 已复制，请只提供给可信设备', 'success');
-  });
-  $('#toggle-video-gateway-key').addEventListener('click', () => {
-    const input = $('#video-gateway-api-key');
-    input.type = input.type === 'password' ? 'text' : 'password';
-    $('#toggle-video-gateway-key').textContent = input.type === 'password' ? '鏄剧ず' : '闅愯棌';
-  });
-  $('#copy-video-gateway-url').addEventListener('click', async () => {
-    await window.studio.clipboard.writeText($('#video-gateway-api-url').textContent.trim());
-    toast('瑙嗛 Base URL 宸插鍒?, 'success');
-  });
-  $('#copy-video-gateway-key').addEventListener('click', async () => {
-    await window.studio.clipboard.writeText($('#video-gateway-api-key').value.trim());
-    toast('瑙嗛 API Key 宸插鍒讹紝璇峰彧鎻愪緵鎮ㄤ娇鐢?, 'success');
-  });
-  $('#video-gateway-port').addEventListener('change', async () => {
+  bind('#video-gateway-port', 'change', () => saveSettings(false));
+  bind('#jimeng-gateway-url', 'change', async () => {
     await saveSettings(false);
+    toast('已更新即梦网关地址', 'success');
   });
-  $('#jimeng-gateway-url').addEventListener('change', async () => {
-    await saveSettings(false);
-    toast('即梦专用网关地址已保存', 'success');
-  });
-  $('#toggle-secret').addEventListener('click', () => {
-    const input = $('#api-key');
-    input.type = input.type === 'password' ? 'text' : 'password';
-    $('#toggle-secret').textContent = input.type === 'password' ? '显示' : '隐藏';
-  });
-  $('#toggle-video-key').addEventListener('click', () => {
-    const input = $('#video-api-key');
-    input.type = input.type === 'password' ? 'text' : 'password';
-    $('#toggle-video-key').textContent = input.type === 'password' ? '显示' : '隐藏';
-  });
-  $('#toggle-admin-password').addEventListener('click', () => {
-    const input = $('#integrated-admin-password');
-    input.type = input.type === 'password' ? 'text' : 'password';
-    $('#toggle-admin-password').textContent = input.type === 'password' ? '显示' : '隐藏';
-  });
-  $('#toggle-cliproxy-key').addEventListener('click', () => {
-    const input = $('#cliproxy-api-key');
-    input.type = input.type === 'password' ? 'text' : 'password';
-    $('#toggle-cliproxy-key').textContent = input.type === 'password' ? '显示' : '隐藏';
-  });
-  $('#toggle-management-key').addEventListener('click', () => {
-    const input = $('#cliproxy-management-key');
-    input.type = input.type === 'password' ? 'text' : 'password';
-    $('#toggle-management-key').textContent = input.type === 'password' ? '显示' : '隐藏';
-  });
-  $('#lan-access-enabled').addEventListener('change', async () => {
+  bind('#lan-access-enabled', 'change', async () => {
     try {
       await saveSettings(false);
       await refreshCliProxyInfo();
-      toast($('#lan-access-enabled').checked
-        ? '局域网访问已选择，点击“保存并启动”让设置生效'
-        : '局域网访问已关闭，点击“保存并启动”恢复仅本机监听');
+      toast($('#lan-access-enabled')?.checked ? '局域网访问已开启，保存并生效' : '局域网访问已关闭，暂未启用', 'info');
     } catch (error) {
       toast(error.message, 'error');
     }
   });
-  $('#copy-lan-url').addEventListener('click', async () => {
-    const value = $('#lan-api-url').textContent.trim();
-    if (!/^http:\/\/\d+\.\d+\.\d+\.\d+:\d+\/v1$/.test(value)) return toast('当前没有可复制的局域网地址', 'error');
+  bind('#copy-lan-url', 'click', async () => {
+    const value = $('#lan-api-url')?.textContent.trim() || '';
+    if (!/^http:\/\/\d+\.\d+\.\d+\.\d+:\d+\/v1$/.test(value)) return toast('当前无可用局域网地址', 'error');
     await window.studio.clipboard.writeText(value);
-    toast('手机 Base URL 已复制', 'success');
+    toast('已复制 Base URL', 'success');
   });
-  $('#copy-lan-key').addEventListener('click', async () => {
-    const value = $('#cliproxy-api-key').value.trim();
-    if (!value || value.startsWith('正在')) return toast('API Key 尚未准备好', 'error');
+  bind('#copy-lan-key', 'click', async () => {
+    const value = $('#cliproxy-api-key')?.value.trim() || '';
+    if (!value || value.startsWith('正在')) return toast('API Key 还未就绪', 'error');
     await window.studio.clipboard.writeText(value);
-    toast('API Key 已复制，请只发送给你信任的设备', 'success');
+    toast('已复制 API Key', 'success');
   });
-  $$('[data-oauth-provider]').forEach((button) => button.addEventListener('click', () => startOAuth(button.dataset.oauthProvider, button)));
-  $$('.preset-tab').forEach((item) => item.addEventListener('click', () => selectPreset(item.dataset.preset)));
-  $('#run-play').addEventListener('click', runApiTest);
-  $('#cancel-play').addEventListener('click', () => state.apiRequestId && window.studio.gateway.cancel(state.apiRequestId));
-  $('#clear-output').addEventListener('click', () => {
-    $('#response-output').textContent = '等待下一次请求…';
-    $('#response-output').classList.add('empty');
+  bindMany('[data-oauth-provider]', 'click', (event) => startOAuth(event.currentTarget.dataset.oauthProvider, event.currentTarget));
+  bindMany('.preset-tab', 'click', (event) => selectPreset(event.currentTarget.dataset.preset));
+  bind('#run-play', 'click', runApiTest);
+  bind('#cancel-play', 'click', () => state.apiRequestId && window.studio.gateway.cancel(state.apiRequestId));
+  bind('#clear-output', 'click', () => {
+    const responseOutput = $('#response-output');
+    if (!responseOutput) return;
+    responseOutput.textContent = '等待返回中...';
+    responseOutput.classList.add('empty');
   });
-  $$('.image-mode-tab').forEach((tab) => tab.addEventListener('click', () => setImageMode(tab.dataset.imageMode)));
-  $('#pick-reference-images').addEventListener('click', pickReferenceImages);
-  $('#run-image').addEventListener('click', runImageRequest);
-  $('#cancel-image').addEventListener('click', () => state.imageRequestId && window.studio.images.cancel(state.imageRequestId));
-  $('#copy-image-api').addEventListener('click', copyImageApiExample);
-  $('#copy-image-api-secondary').addEventListener('click', copyImageApiExample);
-  $('#clear-image-history').addEventListener('click', clearImageHistory);
-  $('#image-prompt').addEventListener('input', () => { updatePromptCount(); updateImageApiExample(); });
-  ['#image-model', '#image-size', '#image-quality', '#image-count', '#image-format', '#image-background', '#base-url']
-    .forEach((selector) => $(selector).addEventListener('input', updateImageApiExample));
-  $('#video-protocol').addEventListener('change', () => setVideoProtocol($('#video-protocol').value));
-  $('#video-connection-kind').addEventListener('change', () => setVideoConnectionKind($('#video-connection-kind').value));
-  $('#video-reference-mode').addEventListener('change', () => setVideoReferenceMode($('#video-reference-mode').value));
-  $('#pick-video-images').addEventListener('click', pickVideoReferences);
-  $('#run-video').addEventListener('click', runVideoRequest);
-  $('#cancel-video').addEventListener('click', () => state.videoRequestId && window.studio.videos.cancel(state.videoRequestId));
-  $('#copy-video-api').addEventListener('click', copyVideoApiExample);
-  $('#copy-video-api-secondary').addEventListener('click', copyVideoApiExample);
-  $('#open-video-url').addEventListener('click', openVideoResult);
-  $('#video-prompt').addEventListener('input', () => { updateVideoPromptCount(); updateVideoApiExample(); });
-  ['#video-model', '#video-ratio', '#video-resolution', '#video-duration', '#base-url']
-    .forEach((selector) => $(selector).addEventListener('input', updateVideoApiExample));
-  $$('[data-select-tool]').forEach((item) => item.addEventListener('click', () => selectTool(item.dataset.selectTool)));
-  $('#detect-tools').addEventListener('click', () => detectTools({ notify: true }));
-  $('#save-tool-paths').addEventListener('click', async () => { await saveSettings(); await detectTools({ persist: false }); });
-  $('#run-tool').addEventListener('click', runTool);
-  $('#clear-tool-output').addEventListener('click', () => { $('#tool-output').textContent = '等待运行真实客户端…'; });
-  $$('input[name="service-mode"]').forEach((input) => input.addEventListener('change', async () => {
+  bindMany('.image-mode-tab', 'click', (event) => setImageMode(event.currentTarget.dataset.imageMode));
+  bind('#pick-reference-images', 'click', pickReferenceImages);
+  bind('#run-image', 'click', runImageRequest);
+  bind('#cancel-image', 'click', () => state.imageRequestId && window.studio.images.cancel(state.imageRequestId));
+  bind('#copy-image-api', 'click', copyImageApiExample);
+  bind('#copy-image-api-secondary', 'click', copyImageApiExample);
+  bind('#clear-image-history', 'click', clearImageHistory);
+  bind('#image-prompt', 'input', () => {
+    updatePromptCount();
+    updateImageApiExample();
+  });
+  bindInputs(['#image-model', '#image-size', '#image-quality', '#image-count', '#image-format', '#image-background', '#base-url'], 'input', updateImageApiExample);
+  bind('#video-protocol', 'change', () => {
+    const node = $('#video-protocol');
+    setVideoProtocol(node ? node.value : 'videos');
+  });
+  bind('#video-connection-kind', 'change', () => {
+    const node = $('#video-connection-kind');
+    setVideoConnectionKind(node ? node.value : 'agnes');
+  });
+  bind('#video-reference-mode', 'change', () => {
+    const node = $('#video-reference-mode');
+    setVideoReferenceMode(node ? node.value : 'first_last_frames');
+  });
+  bind('#pick-video-images', 'click', pickVideoReferences);
+  bind('#run-video', 'click', runVideoRequest);
+  bind('#cancel-video', 'click', () => state.videoRequestId && window.studio.videos.cancel(state.videoRequestId));
+  bind('#copy-video-api', 'click', copyVideoApiExample);
+  bind('#copy-video-api-secondary', 'click', copyVideoApiExample);
+  bind('#open-video-url', 'click', openVideoResult);
+  bind('#video-prompt', 'input', () => {
+    updateVideoPromptCount();
+    updateVideoApiExample();
+  });
+  bindInputs(['#video-model', '#video-ratio', '#video-resolution', '#video-duration', '#base-url'], 'input', updateVideoApiExample);
+  bindMany('[data-select-tool]', 'click', (event) => selectTool(event.currentTarget.dataset.selectTool));
+  bind('#detect-tools', 'click', () => detectTools({ notify: true }));
+  bind('#save-tool-paths', 'click', async () => {
+    await saveSettings();
+    await detectTools({ persist: false });
+  });
+  bind('#run-tool', 'click', runTool);
+  bind('#clear-tool-output', 'click', () => {
+    const toolOutput = $('#tool-output');
+    if (!toolOutput) return;
+    toolOutput.textContent = '等待命令返回...';
+  });
+  bindMany('input[name="service-mode"]', 'change', async () => {
     renderServiceMode();
     renderServiceMetric();
     await saveSettings(false);
     await refreshSelectedService();
-  }));
-  $$('[data-pick]').forEach((button) => button.addEventListener('click', async () => {
-    const value = await window.studio.dialog.pick(button.dataset.pick);
+  });
+  bindMany('[data-pick]', 'click', async (event) => {
+    const value = await window.studio.dialog.pick(event.currentTarget.dataset.pick);
     if (!value) return;
-    if (button.dataset.pick === 'compose') $('#compose-file').value = value;
-    else if (button.dataset.pick === 'binary') $('#binary-path').value = value;
-    else $('#working-directory').value = value;
-  }));
-  $('#start-service').addEventListener('click', startService);
-  $('#stop-service').addEventListener('click', stopService);
-  $('#clear-logs').addEventListener('click', () => { $('#service-log').innerHTML = '<p class="log-empty">日志视图已清空。</p>'; });
-  $$('[data-doc]').forEach((button) => button.addEventListener('click', () => window.studio.external.open(button.dataset.doc)));
-  window.studio.gateway.onChunk(handleApiChunk);
-  window.studio.tools.onChunk(handleToolChunk);
-  window.studio.service.onLog(appendServiceLog);
-  window.studio.oauth.onStatus(handleOAuthStatus);
-}
+    if (event.currentTarget.dataset.pick === 'compose') {
+      const node = $('#compose-file');
+      if (node) node.value = value;
+    } else if (event.currentTarget.dataset.pick === 'binary') {
+      const node = $('#binary-path');
+      if (node) node.value = value;
+    } else {
+      const node = $('#working-directory');
+      if (node) node.value = value;
+    }
+  });
+  bind('#start-service', 'click', startService);
+  bind('#stop-service', 'click', stopService);
+  bind('#clear-logs', 'click', () => {
+    const logs = $('#service-log');
+    if (!logs) return;
+    logs.innerHTML = '<p class="log-empty">服务日志已清空</p>';
+  });
+  bindMany('[data-doc]', 'click', (event) => window.studio.external.open(event.currentTarget.dataset.doc));
 
+  if (window.studio?.gateway?.onChunk) window.studio.gateway.onChunk(handleApiChunk);
+  if (window.studio?.tools?.onChunk) window.studio.tools.onChunk(handleToolChunk);
+  if (window.studio?.service?.onLog) window.studio.service.onLog(appendServiceLog);
+  if (window.studio?.oauth?.onStatus) window.studio.oauth.onStatus(handleOAuthStatus);
+}
 async function init() {
   try {
     bindEvents();
@@ -1626,3 +1647,4 @@ async function init() {
 }
 
 init();
+
