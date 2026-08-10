@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('studio', {
     status: () => ipcRenderer.invoke('service:status'),
     credentials: () => ipcRenderer.invoke('service:credentials'),
     accounts: () => ipcRenderer.invoke('service:accounts'),
+    selectAccount: (name) => ipcRenderer.invoke('service:account:select', name),
+    setAccountDisabled: (name, disabled) => ipcRenderer.invoke('service:account:disabled', name, disabled),
+    deleteAccount: (name) => ipcRenderer.invoke('service:account:delete', name),
     onLog: (callback) => subscribe('service:log', callback)
   },
   oauth: {

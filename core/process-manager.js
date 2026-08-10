@@ -297,6 +297,21 @@ class ProcessManager {
     return this.cliProxyRuntime.getAccounts();
   }
 
+  async selectServiceAccount(service, name) {
+    if (service.mode !== 'cliproxy' || !this.cliProxyRuntime) throw new Error('请先选择“轻量 OAuth”服务模式');
+    return this.cliProxyRuntime.selectAccount(name);
+  }
+
+  async setServiceAccountDisabled(service, name, disabled) {
+    if (service.mode !== 'cliproxy' || !this.cliProxyRuntime) throw new Error('请先选择“轻量 OAuth”服务模式');
+    return this.cliProxyRuntime.setAccountDisabled(name, disabled);
+  }
+
+  async deleteServiceAccount(service, name) {
+    if (service.mode !== 'cliproxy' || !this.cliProxyRuntime) throw new Error('请先选择“轻量 OAuth”服务模式');
+    return this.cliProxyRuntime.deleteAccount(name);
+  }
+
   async beginOAuth(service, provider) {
     if (service.mode !== 'cliproxy' || !this.cliProxyRuntime) {
       throw new Error('请先选择“轻量 OAuth”服务模式');

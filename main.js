@@ -345,6 +345,9 @@ function registerIpc() {
   ipcMain.handle('service:status', () => processManager.getServiceStatus(settingsStore.load().service));
   ipcMain.handle('service:credentials', () => processManager.getServiceCredentials(settingsStore.load().service));
   ipcMain.handle('service:accounts', () => processManager.getServiceAccounts(settingsStore.load().service));
+  ipcMain.handle('service:account:select', (_event, name) => processManager.selectServiceAccount(settingsStore.load().service, name));
+  ipcMain.handle('service:account:disabled', (_event, name, disabled) => processManager.setServiceAccountDisabled(settingsStore.load().service, name, disabled));
+  ipcMain.handle('service:account:delete', (_event, name) => processManager.deleteServiceAccount(settingsStore.load().service, name));
   ipcMain.handle('oauth:start', async (_event, provider) => {
     const settings = settingsStore.load();
     const oauthSession = await processManager.beginOAuth(settings.service, provider);

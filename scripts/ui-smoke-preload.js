@@ -70,6 +70,9 @@ contextBridge.exposeInMainWorld('studio', {
       lanApiUrl: 'http://192.168.1.107:8317/v1'
     }),
     accounts: async () => [{ name: 'smoke.json', provider: 'codex', email: 'example@example.com', status: 'ready' }],
+    selectAccount: async (name) => ({ name, provider: 'codex' }),
+    setAccountDisabled: async (name, disabled) => ({ name, disabled }),
+    deleteAccount: async (name) => ({ name, deleted: true }),
     onLog: subscribe
   },
   oauth: { start: async () => ({}), onStatus: subscribe },

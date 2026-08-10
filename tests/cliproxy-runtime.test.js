@@ -56,3 +56,30 @@ test('CLIProxy runtime can expose only the API on the local network', (t) => {
   assert.match(config, /^host: "0\.0\.0\.0"$/m);
   assert.match(config, /^  allow-remote: false$/m);
 });
+
+test('CLIProxy runtime can select, disable, and delete OAuth accounts', async () => {
+  const runtime = new CliProxyRuntime({ dataRoot: path.join(os.tmpdir(), 'modugate-account-actions'), port: 28319 });
+  const accounts = [
+    { name: 'codex-a.json', provider: 'codex', email: 'a@example.com', disabled: false },
+    { name: 'codex-b.json', provider: 'codex', email: 'b@example.com', disabled: false },
+    { name: 'claude-a.json', provider: 'claude', email: 'c@example.com', disabled: false }
+  ];
+  const requests = [];
+  runtime.isHealthy = async () => true;
+  runtime.managementRequest = async (endpoint, options = {}) => {
+    requests.push({ endpoint, ...options });
+    if (endpoint === 'auth-files' && !options.method) return { files: accounts };
+    return { status: 'ok' };
+  };
+
+  await runtime.selectAccount('codex-b.json');
+  assert.deepEqual(requests.slice(1, 3).map((item) => item.body), [
+    { name: 'codex-b.json', disabled: false },
+    { name: 'codex-a.json', disabled: true }
+  ]);
+  await runtime.setAccountDisabled('codex-b.json', true);
+  assert.deepEqual(requests.at(-1).body, { name: 'codex-b.json', disabled: true });
+  await runtime.deleteAccount('codex-a.json');
+  assert.equal(requests.at(-1).method, 'DELETE');
+  assert.deepEqual(requests.at(-1).body, { names: ['codex-a.json'] });
+});

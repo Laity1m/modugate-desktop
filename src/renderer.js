@@ -229,16 +229,72 @@ function renderCliProxyAccounts(accounts) {
     return;
   }
   items.forEach((account) => {
+    const enabledForProvider = items.filter((item) => item.provider === account.provider && !item.disabled);
+    const exclusive = !account.disabled && enabledForProvider.length === 1;
     const row = document.createElement('div');
-    row.className = 'account-item';
+    row.className = `account-item${exclusive ? ' selected' : ''}${account.disabled ? ' disabled' : ''}`;
     const name = document.createElement('strong');
     name.textContent = account.email || account.name || '已连接账号';
     const provider = document.createElement('span');
     provider.textContent = account.provider || 'unknown';
     const detail = document.createElement('small');
-    detail.textContent = account.disabled ? '已停用' : account.status || account.name || '可用';
-    row.append(name, provider, detail);
+    detail.textContent = account.disabled
+      ? '已停用，不参与请求'
+      : exclusive
+        ? '当前使用'
+        : `参与轮询${account.statusMessage ? ` · ${account.statusMessage}` : ''}`;
+    const actions = document.createElement('div');
+    actions.className = 'account-item-actions';
+    const select = document.createElement('button');
+    select.className = 'button button-secondary';
+    select.textContent = exclusive ? '当前账号' : '设为当前';
+    select.disabled = exclusive;
+    select.addEventListener('click', () => selectCliProxyAccount(account, select));
+    const toggle = document.createElement('button');
+    toggle.className = 'button button-secondary';
+    toggle.textContent = account.disabled ? '启用' : '停用';
+    toggle.addEventListener('click', () => toggleCliProxyAccount(account, toggle));
+    const remove = document.createElement('button');
+    remove.className = 'button button-ghost account-delete';
+    remove.textContent = '退出并删除';
+    remove.addEventListener('click', () => deleteCliProxyAccount(account, remove));
+    actions.append(select, toggle, remove);
+    row.append(name, provider, detail, actions);
     list.append(row);
+  });
+}
+
+async function runCliProxyAccountAction(button, action) {
+  button.disabled = true;
+  try {
+    await action();
+    await refreshCliProxyInfo();
+  } catch (error) {
+    toast(cleanIpcError(error), 'error');
+    button.disabled = false;
+  }
+}
+
+async function selectCliProxyAccount(account, button) {
+  await runCliProxyAccountAction(button, async () => {
+    await window.studio.service.selectAccount(account.name);
+    toast(`已切换为 ${account.email || account.name}；同服务商其他账号已停用`, 'success');
+  });
+}
+
+async function toggleCliProxyAccount(account, button) {
+  await runCliProxyAccountAction(button, async () => {
+    await window.studio.service.setAccountDisabled(account.name, !account.disabled);
+    toast(account.disabled ? '账号已启用，将参与请求' : '账号已停用', 'success');
+  });
+}
+
+async function deleteCliProxyAccount(account, button) {
+  const label = account.email || account.name;
+  if (!window.confirm(`确定退出并删除“${label}”吗？本机会删除该账号的 OAuth 登录凭证，之后可以重新登录。`)) return;
+  await runCliProxyAccountAction(button, async () => {
+    await window.studio.service.deleteAccount(account.name);
+    toast(`${label} 已退出并从本机删除`, 'success');
   });
 }
 

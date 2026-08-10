@@ -346,10 +346,15 @@ textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
 .account-head { display: flex; justify-content: space-between; align-items: center; }
 .account-list { display: grid; gap: 6px; }
 .account-list p { margin: 0; color: var(--muted-2); font-size: 9px; }
-.account-item { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 8px 9px; border-radius: 6px; background: rgba(4,13,24,.5); }
+.account-item { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; padding: 10px; border: 1px solid transparent; border-radius: 7px; background: rgba(4,13,24,.5); }
+.account-item.selected { border-color: rgba(68,215,200,.34); background: rgba(68,215,200,.045); }
+.account-item.disabled { opacity: .68; }
 .account-item strong { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .account-item span { color: var(--cyan); font: 8px Consolas, monospace; text-transform: uppercase; }
 .account-item small { grid-column: 1 / -1; overflow: hidden; color: var(--muted-2); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.account-item-actions { display: flex; grid-column: 1 / -1; flex-wrap: wrap; gap: 6px; padding-top: 3px; }
+.account-item-actions .button { padding: 6px 9px; font-size: 8px; }
+.account-item-actions .account-delete { margin-left: auto; color: var(--danger); }
 .lan-access-card { display: grid; gap: 13px; padding: 14px; border: 1px solid rgba(68,215,200,.16); border-radius: 9px; background: rgba(68,215,200,.025); }
 .lan-access-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .lan-access-head > div { display: grid; gap: 5px; min-width: 0; }

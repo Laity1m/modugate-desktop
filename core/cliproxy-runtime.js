@@ -337,8 +337,53 @@ class CliProxyRuntime {
       provider: item.provider || item.type || 'unknown',
       email: item.email || '',
       disabled: Boolean(item.disabled),
-      status: item.status || ''
+      status: item.status || '',
+      statusMessage: item.status_message || item.statusMessage || ''
     })) : [];
+  }
+
+  async setAccountDisabled(name, disabled) {
+    const accountName = String(name || '').trim();
+    if (!accountName) throw new Error('账号凭证名称无效');
+    const accounts = await this.getAccounts();
+    if (!accounts.some((item) => item.name === accountName)) throw new Error('账号不存在或已退出');
+    await this.managementRequest('auth-files/status', {
+      method: 'PATCH',
+      body: { name: accountName, disabled: Boolean(disabled) }
+    });
+    return { name: accountName, disabled: Boolean(disabled) };
+  }
+
+  async selectAccount(name) {
+    const accountName = String(name || '').trim();
+    const accounts = await this.getAccounts();
+    const selected = accounts.find((item) => item.name === accountName);
+    if (!selected) throw new Error('账号不存在或已退出');
+    const sameProvider = accounts.filter((item) => item.provider === selected.provider);
+    await this.managementRequest('auth-files/status', {
+      method: 'PATCH',
+      body: { name: selected.name, disabled: false }
+    });
+    for (const account of sameProvider) {
+      if (account.name === selected.name || account.disabled) continue;
+      await this.managementRequest('auth-files/status', {
+        method: 'PATCH',
+        body: { name: account.name, disabled: true }
+      });
+    }
+    return { name: selected.name, provider: selected.provider };
+  }
+
+  async deleteAccount(name) {
+    const accountName = String(name || '').trim();
+    if (!accountName) throw new Error('账号凭证名称无效');
+    const accounts = await this.getAccounts();
+    if (!accounts.some((item) => item.name === accountName)) throw new Error('账号不存在或已退出');
+    await this.managementRequest('auth-files', {
+      method: 'DELETE',
+      body: { names: [accountName] }
+    });
+    return { name: accountName, deleted: true };
   }
 
   async beginOAuth(provider) {

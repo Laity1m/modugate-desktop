@@ -55,6 +55,7 @@ app.whenReady().then(async () => {
       documentScrollWidth: document.documentElement.scrollWidth,
       contentClientHeight: scroll.clientHeight,
       contentScrollHeight: scroll.scrollHeight,
+      accountActions: Array.from(document.querySelectorAll('#cliproxy-accounts .account-item-actions button')).map((item) => item.textContent),
       before,
       after,
       canScroll: after > before
@@ -120,6 +121,7 @@ app.whenReady().then(async () => {
     && result.qrReady
     && result.documentScrollWidth <= result.viewportWidth
     && result.canScroll
+    && result.accountActions.join(',') === '当前账号,停用,退出并删除'
     && accountResult.activePage === 'connection'
     && accountResult.unifiedUrl === 'http://127.0.0.1:8787/v1'
     && accountResult.accountName.includes('我的即梦会员')
